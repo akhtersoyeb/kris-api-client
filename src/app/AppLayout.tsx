@@ -6,6 +6,7 @@ import { ResponsePane } from "@/features/response-viewer/ResponsePane";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useTabsStore } from "@/store/tabs";
 import { ThemeToggle } from "@/app/ThemeToggle";
+import { CommandPalette } from "@/features/palette/CommandPalette";
 
 export function AppLayout() {
   // Start with one empty tab. The getState check keeps StrictMode's double effect from opening two.
@@ -28,6 +29,7 @@ export function AppLayout() {
         <ResizablePanel defaultSize={78}>
           <div className="flex h-full flex-col">
             <TabBar />
+            <CommandPalette />
             <ResizablePanelGroup orientation="vertical" className="flex-1">
               <ResizablePanel defaultSize={50} minSize={20}>
                 <RequestPane />
