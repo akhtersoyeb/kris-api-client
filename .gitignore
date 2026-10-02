@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+coverage
+.env
+.env.*
+src-tauri/target
+src-tauri/gen/schemas
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
