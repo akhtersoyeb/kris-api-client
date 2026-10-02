@@ -5,6 +5,7 @@ import { TabBar } from "@/features/request-editor/TabBar";
 import { ResponsePane } from "@/features/response-viewer/ResponsePane";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useTabsStore } from "@/store/tabs";
+import { ThemeToggle } from "@/app/ThemeToggle";
 
 export function AppLayout() {
   // Start with one empty tab. The getState check keeps StrictMode's double effect from opening two.
@@ -16,6 +17,7 @@ export function AppLayout() {
     <div className="flex h-screen flex-col bg-background text-foreground">
       <header className="flex h-10 items-center justify-between border-b px-3">
         <span className="text-sm font-semibold">API Client</span>
+        <ThemeToggle />
       </header>
 
       <ResizablePanelGroup orientation="horizontal" className="flex-1">
