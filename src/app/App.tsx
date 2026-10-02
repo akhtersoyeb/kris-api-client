@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ipc } from "@/lib/ipc";
+import { TabBar } from "@/features/request-editor/TabBar";
 
 export function App() {
   const [out, setOut] = useState("");
@@ -22,6 +23,7 @@ export function App() {
           Ping (empty, should fail)
         </Button>
       </div>
+      <TabBar />
       <p className="text-sm text-muted-foreground">{out}</p>
     </div>
   );

@@ -12,7 +12,10 @@ pub fn run() {
     // Regenerate TypeScript bindings on every dev run. The file is committed.
     #[cfg(debug_assertions)]
     builder
-        .export(Typescript::default(), "../src/lib/bindings.ts")
+        .export(
+            Typescript::default().header("// @ts-nocheck\n"),
+            "../src/lib/bindings.ts",
+        )
         .expect("failed to export typescript bindings");
 
     tauri::Builder::default()
