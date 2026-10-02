@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath, URL } from "node:url";
 
 import process from "node:process";
 const host = process.env.TAURI_DEV_HOST;
@@ -19,10 +20,10 @@ export default defineConfig(() => ({
     host: host || false,
     hmr: host
       ? {
-        protocol: "ws",
-        host,
-        port: 1421,
-      }
+          protocol: "ws",
+          host,
+          port: 1421,
+        }
       : undefined,
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`
@@ -34,5 +35,8 @@ export default defineConfig(() => ({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
+  },
+  resolve: {
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
 }));
