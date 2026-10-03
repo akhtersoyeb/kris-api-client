@@ -1,4 +1,11 @@
 import { create } from "zustand";
+import {
+  defaultBody,
+  defaultSettings,
+  type BodyDraft,
+  type KeyValueRow,
+  type SettingsDraft,
+} from "@/store/request-draft";
 
 export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
 export type HttpMethod = (typeof HTTP_METHODS)[number];
@@ -9,6 +16,10 @@ export interface RequestTab {
   method: HttpMethod;
   url: string;
   dirty: boolean;
+  params: KeyValueRow[];
+  headers: KeyValueRow[];
+  body: BodyDraft;
+  settings: SettingsDraft;
 }
 
 export type TabPatch = Partial<Omit<RequestTab, "id">>;
@@ -36,6 +47,10 @@ export const useTabsStore = create<TabsState>()((set) => ({
       method: "GET",
       url: "",
       dirty: false,
+      params: [],
+      headers: [],
+      body: defaultBody(),
+      settings: defaultSettings(),
       ...init,
     };
     set((s) => ({ tabs: [...s.tabs, tab], activeTabId: tab.id }));

@@ -73,4 +73,10 @@ describe("tabs store", () => {
     store().updateTab(a, { dirty: false });
     expect(store().tabs[0]?.dirty).toBe(false);
   });
+
+  it("opens tabs with empty request details", () => {
+    store().openTab();
+    expect(store().tabs[0]).toMatchObject({ params: [], headers: [], body: { mode: "none" } });
+    expect(store().tabs[0]?.settings).toEqual({ timeoutMs: 30000, followRedirects: true });
+  });
 });
