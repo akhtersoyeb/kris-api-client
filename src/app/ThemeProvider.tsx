@@ -10,6 +10,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const apply = () => {
       const dark = theme === "dark" || (theme === "system" && media.matches);
+      useThemeStore.setState({ isDark: dark });
       root.classList.toggle("dark", dark);
       root.style.colorScheme = dark ? "dark" : "light";
     };
