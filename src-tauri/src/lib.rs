@@ -1,5 +1,6 @@
 mod commands;
 mod error;
+mod http_engine;
 
 #[cfg(debug_assertions)]
 use specta_typescript::Typescript;

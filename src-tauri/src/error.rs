@@ -13,6 +13,12 @@ pub enum AppError {
     InvalidInput(String),
     #[error("{0}")]
     Internal(String),
+    #[error("network error: {0}")]
+    Network(String),
+    #[error("timed out: {0}")]
+    Timeout(String),
+    #[error("{0}")]
+    Cancelled(String),
 }
 
 impl From<std::io::Error> for AppError {
