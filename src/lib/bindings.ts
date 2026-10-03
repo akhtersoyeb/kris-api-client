@@ -14,13 +14,16 @@ async ping(message: string) : Promise<Result<PingResponse, AppError>> {
     else return { status: "error", error: e  as any };
 }
 },
-async sendRequest(spec: RequestSpec) : Promise<Result<ResponseSpec, AppError>> {
+async sendRequest(requestId: string, spec: RequestSpec) : Promise<Result<ResponseSpec, AppError>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("send_request", { spec }) };
+    return { status: "ok", data: await TAURI_INVOKE("send_request", { requestId, spec }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async cancelRequest(requestId: string) : Promise<boolean> {
+    return await TAURI_INVOKE("cancel_request", { requestId });
 }
 }
 

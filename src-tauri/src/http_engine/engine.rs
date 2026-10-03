@@ -10,6 +10,8 @@ use super::client::HttpState;
 use super::types::*;
 use crate::error::{AppError, AppResult};
 
+use tokio_util::sync::CancellationToken;
+
 /// Bodies larger than this are cut off. Streaming to disk arrives in Phase 7.
 const MAX_BODY_BYTES: usize = 50 * 1024 * 1024;
 
@@ -171,4 +173,16 @@ fn error_chain(e: &dyn StdError) -> String {
         source = cause.source();
     }
     message
+}
+
+/// Dropping the `execute` future aborts the connection and any body download.
+pub async fn execute_cancellable(
+    state: &HttpState,
+    spec: RequestSpec,
+    token: &CancellationToken,
+) -> AppResult<ResponseSpec> {
+    tokio::select! {
+        _ = token.cancelled() => Err(AppError::Cancelled("request cancelled".into())),
+        result = execute(state, spec) => result,
+    }
 }

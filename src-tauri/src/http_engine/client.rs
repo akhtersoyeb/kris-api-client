@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+use std::sync::Mutex;
+use tokio_util::sync::CancellationToken;
+
 use reqwest::{redirect::Policy, Client};
 
 use crate::error::{AppError, AppResult};
@@ -7,6 +11,7 @@ use crate::error::{AppError, AppResult};
 pub struct HttpState {
     follow: Client,
     no_follow: Client,
+    inflight: Mutex<HashMap<String, CancellationToken>>,
 }
 
 impl HttpState {
@@ -14,6 +19,7 @@ impl HttpState {
         Ok(Self {
             follow: build(Policy::limited(10))?,
             no_follow: build(Policy::none())?,
+            inflight: Mutex::new(HashMap::new()),
         })
     }
 
@@ -23,6 +29,31 @@ impl HttpState {
         } else {
             &self.no_follow
         }
+    }
+
+    pub fn register(&self, request_id: &str) -> CancellationToken {
+        let token = CancellationToken::new();
+        self.lock().insert(request_id.to_string(), token.clone());
+        token
+    }
+
+    pub fn unregister(&self, request_id: &str) {
+        self.lock().remove(request_id);
+    }
+
+    /// Returns true if a request with this id was in flight.
+    pub fn cancel(&self, request_id: &str) -> bool {
+        match self.lock().remove(request_id) {
+            Some(token) => {
+                token.cancel();
+                true
+            }
+            None => false,
+        }
+    }
+
+    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, CancellationToken>> {
+        self.inflight.lock().unwrap_or_else(|e| e.into_inner())
     }
 }
 
