@@ -1,7 +1,7 @@
-#![allow(dead_code, unused_imports)] // removed in R3
-
 mod client;
+mod engine;
 mod types;
 
 pub use client::HttpState;
+pub use engine::execute;
 pub use types::*;

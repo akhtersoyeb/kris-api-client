@@ -8,7 +8,10 @@ use tauri_specta::{collect_commands, Builder};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = Builder::<tauri::Wry>::new().commands(collect_commands![commands::ping::ping]);
+    let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
+        commands::ping::ping,
+        commands::http::send_request
+    ]);
 
     // Regenerate TypeScript bindings on every dev run. The file is committed.
     #[cfg(debug_assertions)]

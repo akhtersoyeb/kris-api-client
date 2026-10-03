@@ -13,6 +13,14 @@ async ping(message: string) : Promise<Result<PingResponse, AppError>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async sendRequest(spec: RequestSpec) : Promise<Result<ResponseSpec, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("send_request", { spec }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -30,8 +38,23 @@ async ping(message: string) : Promise<Result<PingResponse, AppError>> {
  * Error returned from every Tauri command. Serializes to
  * `{ "kind": "InvalidInput", "message": "..." }`, so the UI can switch on `kind`.
  */
-export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string }
+export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string } | { kind: "Network"; message: string } | { kind: "Timeout"; message: string } | { kind: "Cancelled"; message: string }
+export type BodyEncoding = "utf8" | "base64"
+export type HeaderEntry = { name: string; value: string }
+export type KeyValue = { key: string; value: string; enabled: boolean }
 export type PingResponse = { reply: string; appVersion: string }
+export type RequestBody = { type: "none" } | { type: "json"; content: string } | { type: "raw"; content: string; mime: string } | { type: "formUrlEncoded"; fields: KeyValue[] }
+export type RequestSettings = { 
+/**
+ * 0 means no timeout.
+ */
+timeoutMs: number; followRedirects: boolean }
+export type RequestSpec = { method: string; 
+/**
+ * Final URL including the query string.
+ */
+url: string; headers: KeyValue[]; body: RequestBody; settings: RequestSettings }
+export type ResponseSpec = { status: number; statusText: string; httpVersion: string; headers: HeaderEntry[]; body: string; bodyEncoding: BodyEncoding; bodyTruncated: boolean; sizeBytes: number; durationMs: number; finalUrl: string; contentType: string | null }
 
 /** tauri-specta globals **/
 
