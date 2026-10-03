@@ -6,6 +6,7 @@ import { KeyValueEditor } from "./KeyValueEditor";
 import { applyParams } from "./params";
 import { SettingsTab } from "./SettingsTab";
 import { UrlBar } from "./UrlBar";
+import { BodyTab } from "./BodyTab";
 
 const active = (rows: KeyValueRow[]) => rows.filter((r) => r.enabled && r.key !== "").length;
 const badge = (n: number) => (n > 0 ? ` (${n})` : "");
@@ -29,6 +30,7 @@ export function RequestPane() {
         <TabsList className="mx-3 w-fit">
           <TabsTrigger value="params">Params{badge(active(tab.params))}</TabsTrigger>
           <TabsTrigger value="headers">Headers{badge(active(tab.headers))}</TabsTrigger>
+          <TabsTrigger value="body">Body{tab.body.mode !== "none" ? " •" : ""}</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -46,6 +48,9 @@ export function RequestPane() {
             suggestions={COMMON_HEADERS}
             onChange={(headers) => updateTab(tab.id, { headers })}
           />
+        </TabsContent>
+        <TabsContent value="body" className="min-h-0 flex-1">
+          <BodyTab tab={tab} />
         </TabsContent>
         <TabsContent value="settings" className="min-h-0 overflow-auto">
           <SettingsTab tab={tab} />

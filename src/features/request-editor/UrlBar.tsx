@@ -1,4 +1,4 @@
-import { Send } from "lucide-react";
+import { Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,15 +10,20 @@ import {
 } from "@/components/ui/select";
 import { HTTP_METHODS, useTabsStore, type HttpMethod, type RequestTab } from "@/store/tabs";
 import { syncParamsFromUrl } from "./params";
+import { useResponsesStore } from "@/store/responses";
 
 export function UrlBar({ tab }: { tab: RequestTab }) {
   const updateTab = useTabsStore((s) => s.updateTab);
+  const sending = useResponsesStore((s) => s.runs[tab.id]?.phase === "sending");
+  const send = useResponsesStore((s) => s.send);
+  const cancel = useResponsesStore((s) => s.cancel);
 
   return (
     <form
       className="flex gap-2 p-3"
       onSubmit={(e) => {
-        e.preventDefault(); // wired to send in F9
+        e.preventDefault();
+        if (!sending) void send(tab.id);
       }}
     >
       <Select
@@ -51,9 +56,15 @@ export function UrlBar({ tab }: { tab: RequestTab }) {
         }
       />
 
-      <Button type="submit" disabled={!tab.url.trim()}>
-        <Send className="size-4" /> Send
-      </Button>
+      {sending ? (
+        <Button type="button" variant="destructive" onClick={() => void cancel(tab.id)}>
+          <Square className="size-4" /> Cancel
+        </Button>
+      ) : (
+        <Button type="submit" disabled={!tab.url.trim()}>
+          <Send className="size-4" /> Send
+        </Button>
+      )}
     </form>
   );
 }

@@ -1,4 +1,4 @@
-import { commands, type AppError } from "@/lib/bindings";
+import { commands, type AppError, type RequestSpec } from "@/lib/bindings";
 
 type Result<T, E> = { status: "ok"; data: T } | { status: "error"; error: E };
 
@@ -25,4 +25,7 @@ export async function unwrap<T>(call: Promise<Result<T, AppError>>): Promise<T> 
 /** Single entry point for all backend calls. Add one line per new command. */
 export const ipc = {
   ping: (message: string) => unwrap(commands.ping(message)),
+  sendRequest: (requestId: string, spec: RequestSpec) =>
+    unwrap(commands.sendRequest(requestId, spec)),
+  cancelRequest: (requestId: string) => commands.cancelRequest(requestId),
 };
