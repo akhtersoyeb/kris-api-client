@@ -245,3 +245,271 @@ pub fn create_workspace(parent: &Path, name: &str) -> AppResult<PathBuf> {
     write_json(&root.join(WORKSPACE_FILE), &ContainerFile::new(&name))?;
     Ok(root)
 }
+
+// ---------- path helpers ----------
+
+fn depth_of(rel: &str) -> usize {
+    Path::new(rel).components().count()
+}
+
+fn is_request(rel: &str) -> bool {
+    rel.ends_with(REQUEST_SUFFIX)
+}
+
+/// Parent of a node path; "" is the workspace itself (parent of collections).
+fn parent_rel(rel: &str) -> String {
+    match rel.rsplit_once('/') {
+        Some((parent, _)) if parent != COLLECTIONS_DIR => parent.to_string(),
+        _ => String::new(),
+    }
+}
+
+/// Anything inside collections/: a collection, folder or request.
+fn ensure_node(rel: &str) -> AppResult<()> {
+    if depth_of(rel) >= 2 && rel.starts_with("collections/") {
+        Ok(())
+    } else {
+        Err(AppError::InvalidInput(format!(
+            "not a collection item: {rel}"
+        )))
+    }
+}
+
+/// Metadata file of a container: "" is the workspace, `collections/x` a collection, deeper a folder.
+fn container_meta(root: &Path, rel: &str) -> AppResult<PathBuf> {
+    let dir = safe_join(root, rel)?;
+    match depth_of(rel) {
+        0 => Ok(dir.join(WORKSPACE_FILE)),
+        1 => Err(AppError::InvalidInput(format!("invalid container: {rel}"))),
+        2 => {
+            ensure_node(rel)?;
+            Ok(dir.join(COLLECTION_FILE))
+        }
+        _ => {
+            ensure_node(rel)?;
+            Ok(dir.join(FOLDER_FILE))
+        }
+    }
+}
+
+/// Only collections and folders can hold folders and requests.
+fn parent_container(root: &Path, rel: &str) -> AppResult<PathBuf> {
+    if depth_of(rel) < 2 {
+        return Err(AppError::InvalidInput(
+            "choose a collection or folder".into(),
+        ));
+    }
+    container_meta(root, rel)
+}
+
+fn node_id(root: &Path, rel: &str) -> AppResult<String> {
+    ensure_node(rel)?;
+    if is_request(rel) {
+        Ok(read_request(&safe_join(root, rel)?)?.id)
+    } else {
+        Ok(read_container(&container_meta(root, rel)?)?.id)
+    }
+}
+
+fn update_container(path: &Path, change: impl FnOnce(&mut ContainerFile)) -> AppResult<()> {
+    let mut container = read_container(path)?;
+    change(&mut container);
+    write_json(path, &container)
+}
+
+fn append_order(meta: &Path, id: &str) -> AppResult<()> {
+    update_container(meta, |c| {
+        c.order.retain(|x| x != id);
+        c.order.push(id.to_string());
+    })
+}
+
+// ---------- create ----------
+
+pub fn create_collection(root: &Path, name: &str) -> AppResult<String> {
+    let name = clean_name(name)?;
+    let dir = unique_path(&root.join(COLLECTIONS_DIR), &slugify(&name), "");
+    std::fs::create_dir_all(&dir)?;
+    let collection = ContainerFile::new(&name);
+    write_json(&dir.join(COLLECTION_FILE), &collection)?;
+    append_order(&root.join(WORKSPACE_FILE), &collection.id)?;
+    Ok(to_rel(root, &dir))
+}
+
+pub fn create_folder(root: &Path, parent: &str, name: &str) -> AppResult<String> {
+    let name = clean_name(name)?;
+    let parent_meta = parent_container(root, parent)?;
+    let dir = unique_path(&safe_join(root, parent)?, &slugify(&name), "");
+    std::fs::create_dir_all(&dir)?;
+    let folder = ContainerFile::new(&name);
+    write_json(&dir.join(FOLDER_FILE), &folder)?;
+    append_order(&parent_meta, &folder.id)?;
+    Ok(to_rel(root, &dir))
+}
+
+/// Always assigns a fresh id; the id in `request` is ignored.
+pub fn create_request(root: &Path, parent: &str, mut request: RequestFile) -> AppResult<String> {
+    let name = clean_name(&request.name)?;
+    let parent_meta = parent_container(root, parent)?;
+    let path = unique_path(&safe_join(root, parent)?, &slugify(&name), REQUEST_SUFFIX);
+    request.name = name;
+    request.id = new_id();
+    request.schema_version = SCHEMA_VERSION;
+    write_json(&path, &request)?;
+    append_order(&parent_meta, &request.id)?;
+    Ok(to_rel(root, &path))
+}
+
+// ---------- read / save a request ----------
+
+pub fn load_request(root: &Path, rel: &str) -> AppResult<RequestFile> {
+    ensure_node(rel)?;
+    read_request(&safe_join(root, rel)?)
+}
+
+/// Overwrites an existing request file. Its id never changes.
+pub fn save_request(root: &Path, rel: &str, mut request: RequestFile) -> AppResult<()> {
+    ensure_node(rel)?;
+    if !is_request(rel) {
+        return Err(AppError::InvalidInput(format!("not a request file: {rel}")));
+    }
+    let abs = safe_join(root, rel)?;
+    request.id = match read_request(&abs) {
+        Ok(existing) => existing.id,
+        Err(AppError::NotFound(p)) => return Err(AppError::NotFound(p)), // deleted behind our back
+        Err(_) => new_id(), // corrupt file: allow overwriting it
+    };
+    request.schema_version = SCHEMA_VERSION;
+    write_json(&abs, &request)
+}
+
+// ---------- rename / delete / duplicate ----------
+
+pub fn rename_node(root: &Path, rel: &str, new_name: &str) -> AppResult<String> {
+    ensure_node(rel)?;
+    let new_name = clean_name(new_name)?;
+    let abs = safe_join(root, rel)?;
+    let parent = abs
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| root.to_path_buf());
+    let file_name = abs
+        .file_name()
+        .map(|f| f.to_string_lossy().into_owned())
+        .unwrap_or_default();
+
+    let (suffix, current_stem) = if is_request(rel) {
+        let mut request = read_request(&abs)?;
+        request.name = new_name.clone();
+        write_json(&abs, &request)?;
+        (
+            REQUEST_SUFFIX,
+            file_name.trim_end_matches(REQUEST_SUFFIX).to_string(),
+        )
+    } else {
+        update_container(&container_meta(root, rel)?, |c| c.name = new_name.clone())?;
+        ("", file_name)
+    };
+
+    let slug = slugify(&new_name);
+    if slug == current_stem {
+        return Ok(rel.to_string()); // only the display name changed
+    }
+    let target = unique_path(&parent, &slug, suffix);
+    std::fs::rename(&abs, &target)?;
+    Ok(to_rel(root, &target))
+}
+
+pub fn delete_node(root: &Path, rel: &str) -> AppResult<()> {
+    ensure_node(rel)?;
+    let abs = safe_join(root, rel)?;
+    let id = node_id(root, rel)?;
+    if abs.is_dir() {
+        std::fs::remove_dir_all(&abs)?;
+    } else {
+        std::fs::remove_file(&abs)?;
+    }
+    let parent_meta = container_meta(root, &parent_rel(rel))?;
+    update_container(&parent_meta, |c| c.order.retain(|x| *x != id))
+}
+
+/// Copies a folder or collection, giving every node inside a fresh id.
+fn copy_tree(
+    src: &Path,
+    dst: &Path,
+    ids: &mut std::collections::HashMap<String, String>,
+) -> AppResult<()> {
+    std::fs::create_dir_all(dst)?;
+    let mut meta: Option<(PathBuf, ContainerFile)> = None;
+    for entry in std::fs::read_dir(src)?.flatten() {
+        let from = entry.path();
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name.starts_with('.') {
+            continue;
+        }
+        let to = dst.join(&name);
+        if from.is_dir() {
+            copy_tree(&from, &to, ids)?;
+        } else if name.ends_with(REQUEST_SUFFIX) {
+            let mut request = read_request(&from)?;
+            let id = new_id();
+            ids.insert(request.id.clone(), id.clone());
+            request.id = id;
+            write_json(&to, &request)?;
+        } else if name == COLLECTION_FILE || name == FOLDER_FILE {
+            meta = Some((to, read_container(&from)?));
+        }
+    }
+    // Metadata last, so `order` can be remapped to the children's new ids.
+    if let Some((path, mut container)) = meta {
+        let id = new_id();
+        ids.insert(container.id.clone(), id.clone());
+        container.id = id;
+        container.order = container
+            .order
+            .iter()
+            .filter_map(|old| ids.get(old).cloned())
+            .collect();
+        write_json(&path, &container)?;
+    }
+    Ok(())
+}
+
+pub fn duplicate_node(root: &Path, rel: &str) -> AppResult<String> {
+    ensure_node(rel)?;
+    let abs = safe_join(root, rel)?;
+    let parent_abs = abs
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| root.to_path_buf());
+    let parent_meta = container_meta(root, &parent_rel(rel))?;
+    let original_id = node_id(root, rel)?;
+
+    let (target, copy_id) = if is_request(rel) {
+        let mut request = read_request(&abs)?;
+        request.id = new_id();
+        request.name = format!("{} copy", request.name);
+        let target = unique_path(&parent_abs, &slugify(&request.name), REQUEST_SUFFIX);
+        write_json(&target, &request)?;
+        (target, request.id)
+    } else {
+        let name = format!("{} copy", read_container(&container_meta(root, rel)?)?.name);
+        let target = unique_path(&parent_abs, &slugify(&name), "");
+        copy_tree(&abs, &target, &mut std::collections::HashMap::new())?;
+        let meta = container_meta(root, &to_rel(root, &target))?;
+        update_container(&meta, |c| c.name = name)?;
+        let id = read_container(&meta)?.id;
+        (target, id)
+    };
+
+    // Place the copy right after the original.
+    update_container(&parent_meta, |c| {
+        let at = c
+            .order
+            .iter()
+            .position(|x| *x == original_id)
+            .map_or(c.order.len(), |i| i + 1);
+        c.order.insert(at, copy_id);
+    })?;
+    Ok(to_rel(root, &target))
+}
