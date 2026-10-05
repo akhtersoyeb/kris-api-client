@@ -1,10 +1,12 @@
 import { toast } from "sonner";
 import { IpcError, ipc } from "@/lib/ipc";
 import { useDialogs } from "@/store/dialogs";
-import { snapshot, tabToRequestFile } from "@/store/request-doc";
+import { snapshot, tabToRequestFile, snapshotOfFile } from "@/store/request-doc";
 import { useTabsStore } from "@/store/tabs";
 import { useWorkspaceStore } from "@/store/workspace";
-import { errorMessage } from "./actions";
+import { errorMessage, refreshTree } from "./actions";
+import type { RequestFile } from "@/lib/bindings";
+import { isUnder } from "@/lib/paths";
 
 const getTab = (id: string) => useTabsStore.getState().tabs.find((t) => t.id === id);
 
@@ -70,4 +72,57 @@ export async function requestCloseTab(tabId: string) {
     if (choice === "save" && !(await saveTab(tabId))) return;
   }
   useTabsStore.getState().closeTab(tabId);
+}
+
+export async function syncTabWithDisk(tabId: string) {
+  const before = getTab(tabId);
+  if (!before?.path) return;
+
+  let file: RequestFile;
+  try {
+    file = await ipc.loadRequest(before.path);
+  } catch (e) {
+    if (e instanceof IpcError && e.kind === "NotFound") {
+      useTabsStore.getState().detach(tabId);
+      toast.warning(`"${before.title}" was deleted or moved on disk`, {
+        description: "It stays open as an unsaved draft.",
+      });
+    }
+    return; // anything else (for example another tool mid-write): wait for the next change
+  }
+
+  const tab = getTab(tabId); // may have changed while we awaited
+  if (!tab?.path) return;
+  if (snapshotOfFile(file) === tab.saved) return; // our own write, or nothing really changed
+
+  if (tab.dirty) useTabsStore.getState().setConflict(tabId, true);
+  else useTabsStore.getState().applyFile(tabId, tab.path, file);
+}
+
+export async function reloadFromDisk(tabId: string) {
+  const tab = getTab(tabId);
+  if (!tab?.path) return;
+  try {
+    useTabsStore.getState().applyFile(tabId, tab.path, await ipc.loadRequest(tab.path));
+  } catch (e) {
+    toast.error("Could not reload", { description: errorMessage(e) });
+  }
+}
+
+/** Accept the disk version as the new baseline but keep editing; Save will overwrite it. */
+export async function keepMine(tabId: string) {
+  const tab = getTab(tabId);
+  if (!tab?.path) return;
+  try {
+    useTabsStore.getState().setSavedBase(tabId, snapshotOfFile(await ipc.loadRequest(tab.path)));
+  } catch (e) {
+    toast.error("Could not check the file", { description: errorMessage(e) });
+  }
+}
+
+export async function handleExternalChange(paths: string[]) {
+  await refreshTree();
+  const touched = (tabPath: string) => paths.some((p) => p !== "" && isUnder(tabPath, p));
+  const affected = useTabsStore.getState().tabs.filter((t) => t.path && touched(t.path));
+  await Promise.all(affected.map((t) => syncTabWithDisk(t.id)));
 }

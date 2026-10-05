@@ -5,10 +5,23 @@ import { DialogHost } from "@/features/workspace/DialogHost";
 import { WelcomeScreen } from "@/features/workspace/WelcomeScreen";
 import { useThemeStore } from "@/store/theme";
 import { useWorkspaceStore } from "@/store/workspace";
+import { useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
+import { handleExternalChange } from "@/features/workspace/save";
 
 export function App() {
   const isOpen = useWorkspaceStore((s) => s.info !== null);
   const isDark = useThemeStore((s) => s.isDark);
+
+  useEffect(() => {
+    const unlisten = listen<{ paths: string[] }>("workspace-changed", (e) => {
+      void handleExternalChange(e.payload.paths);
+    });
+    return () => {
+      void unlisten.then((stop) => stop());
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       {isOpen ? <AppLayout /> : <WelcomeScreen />}
