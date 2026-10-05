@@ -42,6 +42,7 @@ pub fn run() {
         .expect("failed to export typescript bindings");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(http_engine::HttpState::new().expect("failed to initialise http client"))
         .manage(workspace::WorkspaceState::default())
         .invoke_handler(builder.invoke_handler())
