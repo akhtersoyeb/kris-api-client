@@ -10,3 +10,6 @@ pub mod watcher;
 
 pub use state::WorkspaceState;
 pub use store::{Mutation, NodeEntry, NodeKind, WorkspaceInfo};
+
+#[cfg(test)]
+mod tests;
