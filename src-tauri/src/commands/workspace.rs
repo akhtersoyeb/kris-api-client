@@ -8,6 +8,10 @@ use crate::workspace::{store, WorkspaceInfo, WorkspaceState};
 use crate::workspace::schema::RequestFile;
 use crate::workspace::Mutation;
 
+use crate::workspace::recents::RecentWorkspace;
+use crate::workspace::{recents, schema::WORKSPACE_FILE, sessions};
+use tauri::Manager;
+
 /// Runs blocking file-system work off the async runtime's worker threads.
 pub(crate) async fn blocking<T: Send + 'static>(
     work: impl FnOnce() -> AppResult<T> + Send + 'static,
@@ -15,6 +19,12 @@ pub(crate) async fn blocking<T: Send + 'static>(
     tauri::async_runtime::spawn_blocking(work)
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?
+}
+
+fn app_dir(app: &AppHandle) -> AppResult<PathBuf> {
+    app.path()
+        .app_data_dir()
+        .map_err(|e| AppError::Internal(e.to_string()))
 }
 
 async fn open_at(
@@ -30,6 +40,9 @@ async fn open_at(
     })
     .await?;
     state.open(app, PathBuf::from(&info.root));
+    if let Ok(dir) = app_dir(app) {
+        let _ = recents::touch(&dir, &info.root, &info.name);
+    }
     Ok(info)
 }
 
@@ -189,4 +202,34 @@ pub async fn move_node(
         store::move_node(root, &path, &new_parent_path, &order)
     })
     .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn list_recent_workspaces(app: AppHandle) -> AppResult<Vec<RecentWorkspace>> {
+    // Hide entries whose folder was moved or deleted.
+    Ok(recents::load(&app_dir(&app)?)
+        .into_iter()
+        .filter(|r| Path::new(&r.path).join(WORKSPACE_FILE).is_file())
+        .collect())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn forget_recent_workspace(app: AppHandle, path: String) -> AppResult<()> {
+    recents::forget(&app_dir(&app)?, &path)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn save_session(app: AppHandle, workspace_id: String, json: String) -> AppResult<()> {
+    let dir = app_dir(&app)?;
+    blocking(move || sessions::save(&dir, &workspace_id, &json)).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn load_session(app: AppHandle, workspace_id: String) -> AppResult<Option<String>> {
+    let dir = app_dir(&app)?;
+    blocking(move || sessions::load(&dir, &workspace_id)).await
 }

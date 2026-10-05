@@ -25,7 +25,11 @@ pub fn run() {
         commands::workspace::delete_node,
         commands::workspace::load_request,
         commands::workspace::save_request,
-        commands::workspace::move_node
+        commands::workspace::move_node,
+        commands::workspace::list_recent_workspaces,
+        commands::workspace::forget_recent_workspace,
+        commands::workspace::save_session,
+        commands::workspace::load_session,
     ]);
 
     // Regenerate TypeScript bindings on every dev run. The file is committed.

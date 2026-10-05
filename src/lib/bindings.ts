@@ -123,6 +123,38 @@ async moveNode(path: string, newParentPath: string, order: string[]) : Promise<R
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async listRecentWorkspaces() : Promise<Result<RecentWorkspace[], AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_recent_workspaces") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async forgetRecentWorkspace(path: string) : Promise<Result<null, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("forget_recent_workspace", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async saveSession(workspaceId: string, json: string) : Promise<Result<null, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("save_session", { workspaceId, json }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async loadSession(workspaceId: string) : Promise<Result<string | null, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("load_session", { workspaceId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -160,6 +192,7 @@ export type NodeEntry = { kind: NodeKind; id: string; name: string;
 path: string; parentPath: string | null; depth: number; method: string | null }
 export type NodeKind = "collection" | "folder" | "request"
 export type PingResponse = { reply: string; appVersion: string }
+export type RecentWorkspace = { path: string; name: string }
 export type RequestBody = { type: "none" } | { type: "json"; content: string } | { type: "raw"; content: string; mime: string } | { type: "formUrlEncoded"; fields: KeyValue[] }
 /**
  * <name>.request.json. Mirrors the editor state so nothing is lost between body modes.
