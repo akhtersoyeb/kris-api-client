@@ -24,6 +24,33 @@ async sendRequest(requestId: string, spec: RequestSpec) : Promise<Result<Respons
 },
 async cancelRequest(requestId: string) : Promise<boolean> {
     return await TAURI_INVOKE("cancel_request", { requestId });
+},
+async openWorkspace(path: string) : Promise<Result<WorkspaceInfo, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("open_workspace", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async createWorkspace(parentDir: string, name: string) : Promise<Result<WorkspaceInfo, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_workspace", { parentDir, name }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async closeWorkspace() : Promise<void> {
+    await TAURI_INVOKE("close_workspace");
+},
+async refreshWorkspace() : Promise<Result<WorkspaceInfo, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("refresh_workspace") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -41,10 +68,19 @@ async cancelRequest(requestId: string) : Promise<boolean> {
  * Error returned from every Tauri command. Serializes to
  * `{ "kind": "InvalidInput", "message": "..." }`, so the UI can switch on `kind`.
  */
-export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string } | { kind: "Network"; message: string } | { kind: "Timeout"; message: string } | { kind: "Cancelled"; message: string }
+export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string } | { kind: "Network"; message: string } | { kind: "Timeout"; message: string } | { kind: "Cancelled"; message: string } | { kind: "NotFound"; message: string } | { kind: "Unsupported"; message: string }
 export type BodyEncoding = "utf8" | "base64"
 export type HeaderEntry = { name: string; value: string }
 export type KeyValue = { key: string; value: string; enabled: boolean }
+/**
+ * One row of the flattened, depth-first tree.
+ */
+export type NodeEntry = { kind: NodeKind; id: string; name: string; 
+/**
+ * Relative to the workspace root, `/` separated.
+ */
+path: string; parentPath: string | null; depth: number; method: string | null }
+export type NodeKind = "collection" | "folder" | "request"
 export type PingResponse = { reply: string; appVersion: string }
 export type RequestBody = { type: "none" } | { type: "json"; content: string } | { type: "raw"; content: string; mime: string } | { type: "formUrlEncoded"; fields: KeyValue[] }
 export type RequestSettings = { 
@@ -58,6 +94,11 @@ export type RequestSpec = { method: string;
  */
 url: string; headers: KeyValue[]; body: RequestBody; settings: RequestSettings }
 export type ResponseSpec = { status: number; statusText: string; httpVersion: string; headers: HeaderEntry[]; body: string; bodyEncoding: BodyEncoding; bodyTruncated: boolean; sizeBytes: number; durationMs: number; finalUrl: string; contentType: string | null }
+export type WorkspaceInfo = { id: string; root: string; name: string; nodes: NodeEntry[]; 
+/**
+ * Files that were skipped (invalid JSON, newer schema, ...).
+ */
+warnings: string[] }
 
 /** tauri-specta globals **/
 
