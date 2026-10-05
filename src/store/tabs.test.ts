@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useTabsStore } from "@/store/tabs";
+import type { RequestFile } from "@/lib/bindings";
 
 const store = () => useTabsStore.getState();
 const ids = () => store().tabs.map((t) => t.id);
@@ -78,5 +79,46 @@ describe("tabs store", () => {
     store().openTab();
     expect(store().tabs[0]).toMatchObject({ params: [], headers: [], body: { mode: "none" } });
     expect(store().tabs[0]?.settings).toEqual({ timeoutMs: 30000, followRedirects: true });
+  });
+});
+
+const file: RequestFile = {
+  schemaVersion: 1,
+  id: "01X",
+  name: "Login",
+  method: "POST",
+  url: "https://x.dev/login",
+  params: [],
+  headers: [],
+  body: { mode: "json", json: '{"a":1}', raw: "", rawMime: "text/plain", form: [] },
+  settings: { timeoutMs: 30000, followRedirects: true },
+};
+
+describe("saved requests", () => {
+  it("opens clean, becomes dirty on edit and clean again when reverted", () => {
+    const id = store().openSavedRequest("collections/api/login.request.json", file);
+    expect(store().tabs[0]?.dirty).toBe(false);
+    store().updateTab(id, { url: "https://x.dev/other" });
+    expect(store().tabs[0]?.dirty).toBe(true);
+    store().updateTab(id, { url: "https://x.dev/login" });
+    expect(store().tabs[0]?.dirty).toBe(false);
+  });
+
+  it("follows renames and moves", () => {
+    store().openSavedRequest("collections/api/login.request.json", file);
+    store().retarget("collections/api", "collections/v2", undefined);
+    expect(store().tabs[0]?.path).toBe("collections/v2/login.request.json");
+    store().retarget(
+      "collections/v2/login.request.json",
+      "collections/v2/sign-in.request.json",
+      "Sign in",
+    );
+    expect(store().tabs[0]).toMatchObject({ title: "Sign in", dirty: false });
+  });
+
+  it("keeps content as a draft when its file is removed", () => {
+    store().openSavedRequest("collections/api/login.request.json", file);
+    expect(store().detachUnder("collections/api")).toBe(1);
+    expect(store().tabs[0]).toMatchObject({ path: null, saved: null, dirty: true });
   });
 });

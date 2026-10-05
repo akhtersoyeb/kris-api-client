@@ -13,6 +13,9 @@ const makeTab = (patch: Partial<RequestTab> = {}): RequestTab => ({
   headers: [],
   body: defaultBody(),
   settings: defaultSettings(),
+  path: null,
+  saved: null,
+  conflict: false,
   ...patch,
 });
 
