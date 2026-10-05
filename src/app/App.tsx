@@ -8,10 +8,13 @@ import { useWorkspaceStore } from "@/store/workspace";
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { handleExternalChange } from "@/features/workspace/save";
+import { startSessionAutosave } from "@/features/workspace/session";
 
 export function App() {
   const isOpen = useWorkspaceStore((s) => s.info !== null);
   const isDark = useThemeStore((s) => s.isDark);
+
+  useEffect(() => startSessionAutosave(), []);
 
   useEffect(() => {
     const unlisten = listen<{ paths: string[] }>("workspace-changed", (e) => {

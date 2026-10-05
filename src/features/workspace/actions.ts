@@ -9,6 +9,7 @@ import { useWorkspaceStore } from "@/store/workspace";
 import type { Mutation } from "@/lib/bindings";
 import { blankRequestFile } from "@/store/request-doc";
 import type { NodeEntry } from "@/lib/bindings";
+import { flushSession, restoreSession } from "./session";
 
 export const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -25,11 +26,13 @@ export async function guarded<T>(label: string, run: () => Promise<T>): Promise<
 // ---------- workspace lifecycle ----------
 
 export async function activateWorkspace(info: WorkspaceInfo) {
+  await flushSession(); // save the previous workspace's session before switching
   useResponsesStore.setState({ runs: {} });
   useTabsStore.getState().reset();
   const workspace = useWorkspaceStore.getState();
   workspace.apply(info);
   workspace.setExpanded(info.nodes.filter((n) => n.kind === "collection").map((n) => n.path));
+  await restoreSession(info.id);
   if (useTabsStore.getState().tabs.length === 0) useTabsStore.getState().openTab();
 }
 
@@ -57,6 +60,7 @@ export async function createWorkspaceFlow() {
 }
 
 export async function closeWorkspace() {
+  await flushSession();
   await ipc.closeWorkspace();
   useResponsesStore.setState({ runs: {} });
   useTabsStore.getState().reset();
