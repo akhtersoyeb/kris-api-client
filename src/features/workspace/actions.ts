@@ -1,0 +1,83 @@
+import { open } from "@tauri-apps/plugin-dialog";
+import { toast } from "sonner";
+import type { WorkspaceInfo } from "@/lib/bindings";
+import { ipc } from "@/lib/ipc";
+import { useDialogs } from "@/store/dialogs";
+import { useResponsesStore } from "@/store/responses";
+import { useTabsStore } from "@/store/tabs";
+import { useWorkspaceStore } from "@/store/workspace";
+
+export const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** Runs an action and shows a failure as a toast instead of throwing into the UI. */
+export async function guarded<T>(label: string, run: () => Promise<T>): Promise<T | undefined> {
+  try {
+    return await run();
+  } catch (e) {
+    toast.error(label, { description: errorMessage(e) });
+    return undefined;
+  }
+}
+
+// ---------- workspace lifecycle ----------
+
+export async function activateWorkspace(info: WorkspaceInfo) {
+  useResponsesStore.setState({ runs: {} });
+  useTabsStore.getState().reset();
+  const workspace = useWorkspaceStore.getState();
+  workspace.apply(info);
+  workspace.setExpanded(info.nodes.filter((n) => n.kind === "collection").map((n) => n.path));
+  if (useTabsStore.getState().tabs.length === 0) useTabsStore.getState().openTab();
+}
+
+export async function openWorkspaceAt(path: string) {
+  const info = await guarded("Could not open workspace", () => ipc.openWorkspace(path));
+  if (info) await activateWorkspace(info);
+}
+
+export async function chooseAndOpenWorkspace() {
+  const dir = await open({ directory: true, title: "Open workspace folder" });
+  if (typeof dir === "string") await openWorkspaceAt(dir);
+}
+
+export async function createWorkspaceFlow() {
+  const name = await useDialogs.getState().askName({
+    title: "New workspace",
+    label: "Workspace name",
+    confirmLabel: "Choose folder...",
+  });
+  if (!name) return;
+  const parent = await open({ directory: true, title: "Where should the workspace folder go?" });
+  if (typeof parent !== "string") return;
+  const info = await guarded("Could not create workspace", () => ipc.createWorkspace(parent, name));
+  if (info) await activateWorkspace(info);
+}
+
+export async function closeWorkspace() {
+  await ipc.closeWorkspace();
+  useResponsesStore.setState({ runs: {} });
+  useTabsStore.getState().reset();
+  useWorkspaceStore.getState().clear();
+  void refreshRecents();
+}
+
+export async function refreshRecents() {
+  try {
+    useWorkspaceStore.getState().setRecents(await ipc.listRecentWorkspaces());
+  } catch {
+    /* the welcome screen simply shows no recents */
+  }
+}
+
+export async function forgetRecent(path: string) {
+  await guarded("Could not update the list", () => ipc.forgetRecentWorkspace(path));
+  await refreshRecents();
+}
+
+export async function refreshTree() {
+  try {
+    useWorkspaceStore.getState().apply(await ipc.refreshWorkspace());
+  } catch {
+    /* transient (for example the folder is being moved); the next event retries */
+  }
+}
