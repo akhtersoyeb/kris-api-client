@@ -6,6 +6,8 @@ import { useDialogs } from "@/store/dialogs";
 import { useResponsesStore } from "@/store/responses";
 import { useTabsStore } from "@/store/tabs";
 import { useWorkspaceStore } from "@/store/workspace";
+import type { Mutation } from "@/lib/bindings";
+// import { blankRequestFile } from "@/store/request-doc";
 
 export const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -80,4 +82,27 @@ export async function refreshTree() {
   } catch {
     /* transient (for example the folder is being moved); the next event retries */
   }
+}
+
+const applyMutation = (m: Mutation) => useWorkspaceStore.getState().apply(m.info);
+
+export async function openRequest(path: string) {
+  const existing = useTabsStore.getState().tabs.find((t) => t.path === path);
+  if (existing) {
+    useTabsStore.getState().setActiveTab(existing.id);
+    return;
+  }
+  const file = await guarded("Could not open request", () => ipc.loadRequest(path));
+  if (file) useTabsStore.getState().openSavedRequest(path, file);
+}
+
+export async function newCollection() {
+  const name = await useDialogs
+    .getState()
+    .askName({ title: "New collection", confirmLabel: "Create" });
+  if (!name) return;
+  const m = await guarded("Could not create collection", () => ipc.createCollection(name));
+  if (!m) return;
+  applyMutation(m);
+  useWorkspaceStore.getState().toggle(m.path, true);
 }
