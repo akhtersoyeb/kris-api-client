@@ -1,4 +1,4 @@
-import { Send, Square } from "lucide-react";
+import { Save, Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,6 +11,7 @@ import {
 import { HTTP_METHODS, useTabsStore, type HttpMethod, type RequestTab } from "@/store/tabs";
 import { syncParamsFromUrl } from "./params";
 import { useResponsesStore } from "@/store/responses";
+import { saveTab } from "@/features/workspace/save";
 
 export function UrlBar({ tab }: { tab: RequestTab }) {
   const updateTab = useTabsStore((s) => s.updateTab);
@@ -55,6 +56,15 @@ export function UrlBar({ tab }: { tab: RequestTab }) {
           })
         }
       />
+
+      <Button
+        type="button"
+        variant="outline"
+        disabled={!!tab.path && !tab.dirty}
+        onClick={() => void saveTab(tab.id)}
+      >
+        <Save className="size-4" /> Save
+      </Button>
 
       {sending ? (
         <Button type="button" variant="destructive" onClick={() => void cancel(tab.id)}>

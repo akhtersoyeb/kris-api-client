@@ -10,11 +10,12 @@ import {
 } from "@/components/ui/command";
 import { useTabsStore } from "@/store/tabs";
 import { useThemeStore } from "@/store/theme";
+import { requestCloseTab, saveActiveTab } from "@/features/workspace/save";
+import { closeWorkspace, newCollection } from "@/features/workspace/actions";
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const openTab = useTabsStore((s) => s.openTab);
-  const closeTab = useTabsStore((s) => s.closeTab);
   const activeTabId = useTabsStore((s) => s.activeTabId);
   const setTheme = useThemeStore((s) => s.setTheme);
 
@@ -42,7 +43,9 @@ export function CommandPalette() {
         <CommandGroup heading="Requests">
           <CommandItem onSelect={run(() => openTab())}>New request</CommandItem>
           {activeTabId && (
-            <CommandItem onSelect={run(() => closeTab(activeTabId))}>Close current tab</CommandItem>
+            <CommandItem onSelect={run(() => void requestCloseTab(activeTabId))}>
+              Close current tab
+            </CommandItem>
           )}
         </CommandGroup>
         <CommandSeparator />
@@ -51,6 +54,9 @@ export function CommandPalette() {
           <CommandItem onSelect={run(() => setTheme("dark"))}>Dark</CommandItem>
           <CommandItem onSelect={run(() => setTheme("system"))}>System</CommandItem>
         </CommandGroup>
+        <CommandItem onSelect={run(() => void saveActiveTab())}>Save request</CommandItem>
+        <CommandItem onSelect={run(() => void newCollection())}>New collection</CommandItem>
+        <CommandItem onSelect={run(() => void closeWorkspace())}>Close workspace</CommandItem>
       </CommandList>
     </CommandDialog>
   );

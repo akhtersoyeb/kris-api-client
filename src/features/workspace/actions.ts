@@ -171,3 +171,13 @@ export async function deleteNode(node: NodeEntry) {
   if (kept > 0)
     toast.info(`${kept} open tab${kept === 1 ? " was" : "s were"} kept as unsaved drafts`);
 }
+
+export async function moveNode(node: NodeEntry, parentPath: string, order: string[]) {
+  const m = await guarded("Could not move", () => ipc.moveNode(node.path, parentPath, order));
+  if (!m) return;
+  applyMutation(m);
+  const workspace = useWorkspaceStore.getState();
+  workspace.remapExpanded(node.path, m.path);
+  useTabsStore.getState().retarget(node.path, m.path);
+  if (parentPath) workspace.toggle(parentPath, true);
+}

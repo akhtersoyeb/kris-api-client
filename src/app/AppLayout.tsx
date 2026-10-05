@@ -8,9 +8,22 @@ import { CommandPalette } from "@/features/palette/CommandPalette";
 import { Button } from "@/components/ui/button";
 import { closeWorkspace } from "@/features/workspace/actions";
 import { useWorkspaceStore } from "@/store/workspace";
+import { useEffect } from "react";
+import { saveActiveTab } from "@/features/workspace/save";
 
 export function AppLayout() {
   const workspaceName = useWorkspaceStore((s) => s.info?.name ?? "");
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        void saveActiveTab();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -30,7 +43,7 @@ export function AppLayout() {
       </header>
 
       <ResizablePanelGroup orientation="horizontal" className="flex-1">
-        <ResizablePanel defaultSize={22} minSize={14} maxSize={40}>
+        <ResizablePanel defaultSize={22} minSize={14}>
           <Sidebar />
         </ResizablePanel>
         <ResizableHandle withHandle />

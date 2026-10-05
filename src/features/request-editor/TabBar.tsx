@@ -12,10 +12,10 @@ import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTabsStore, type RequestTab } from "@/store/tabs";
+import { requestCloseTab } from "@/features/workspace/save";
 
 function SortableTab({ tab, active }: { tab: RequestTab; active: boolean }) {
   const setActiveTab = useTabsStore((s) => s.setActiveTab);
-  const closeTab = useTabsStore((s) => s.closeTab);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: tab.id,
   });
@@ -33,7 +33,7 @@ function SortableTab({ tab, active }: { tab: RequestTab; active: boolean }) {
       )}
       onClick={() => setActiveTab(tab.id)}
       onAuxClick={(e) => {
-        if (e.button === 1) closeTab(tab.id); // middle click closes
+        if (e.button === 1) requestCloseTab(tab.id); // middle click closes
       }}
       {...attributes}
       {...listeners}
@@ -52,7 +52,7 @@ function SortableTab({ tab, active }: { tab: RequestTab; active: boolean }) {
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
-          closeTab(tab.id);
+          requestCloseTab(tab.id);
         }}
       >
         <X className="size-3.5" />
