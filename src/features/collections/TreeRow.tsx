@@ -1,8 +1,22 @@
 import { ChevronDown, ChevronRight, Folder, FolderOpen, Library } from "lucide-react";
 import type { NodeEntry } from "@/lib/bindings";
 import { cn } from "@/lib/utils";
-import { openRequest } from "@/features/workspace/actions";
 import { useWorkspaceStore } from "@/store/workspace";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  deleteNode,
+  duplicateNode,
+  newFolder,
+  newRequest,
+  openRequest,
+  renameNode,
+} from "@/features/workspace/actions";
 
 const METHOD_COLORS: Record<string, string> = {
   GET: "text-green-600 dark:text-green-400",
@@ -17,7 +31,7 @@ export function TreeRow({ node, active }: { node: NodeEntry; active: boolean }) 
   const toggle = useWorkspaceStore((s) => s.toggle);
   const isContainer = node.kind !== "request";
 
-  return (
+  const row = (
     <div
       role="treeitem"
       aria-selected={active}
@@ -56,5 +70,32 @@ export function TreeRow({ node, active }: { node: NodeEntry; active: boolean }) 
       )}
       <span className="truncate">{node.name}</span>
     </div>
+  );
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
+      {/* Stops the menu stealing focus back from the dialog it opens. */}
+      <ContextMenuContent className="w-48" onCloseAutoFocus={(e) => e.preventDefault()}>
+        {isContainer ? (
+          <>
+            <ContextMenuItem onSelect={() => void newRequest(node)}>New request</ContextMenuItem>
+            <ContextMenuItem onSelect={() => void newFolder(node)}>New folder</ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        ) : (
+          <ContextMenuItem onSelect={() => void openRequest(node.path)}>Open</ContextMenuItem>
+        )}
+        <ContextMenuItem onSelect={() => void renameNode(node)}>Rename</ContextMenuItem>
+        <ContextMenuItem onSelect={() => void duplicateNode(node)}>Duplicate</ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          className="text-destructive focus:text-destructive"
+          onSelect={() => void deleteNode(node)}
+        >
+          Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

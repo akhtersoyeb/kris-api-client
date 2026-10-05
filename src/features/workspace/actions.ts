@@ -7,7 +7,8 @@ import { useResponsesStore } from "@/store/responses";
 import { useTabsStore } from "@/store/tabs";
 import { useWorkspaceStore } from "@/store/workspace";
 import type { Mutation } from "@/lib/bindings";
-// import { blankRequestFile } from "@/store/request-doc";
+import { blankRequestFile } from "@/store/request-doc";
+import type { NodeEntry } from "@/lib/bindings";
 
 export const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -105,4 +106,68 @@ export async function newCollection() {
   if (!m) return;
   applyMutation(m);
   useWorkspaceStore.getState().toggle(m.path, true);
+}
+
+const noun = (n: NodeEntry) => (n.kind === "request" ? "request" : n.kind);
+
+export async function newFolder(parent: NodeEntry) {
+  const name = await useDialogs.getState().askName({ title: "New folder", confirmLabel: "Create" });
+  if (!name) return;
+  const m = await guarded("Could not create folder", () => ipc.createFolder(parent.path, name));
+  if (!m) return;
+  applyMutation(m);
+  useWorkspaceStore.getState().toggle(parent.path, true);
+  useWorkspaceStore.getState().toggle(m.path, true);
+}
+
+export async function newRequest(parent: NodeEntry) {
+  const name = await useDialogs
+    .getState()
+    .askName({ title: "New request", confirmLabel: "Create" });
+  if (!name) return;
+  const m = await guarded("Could not create request", () =>
+    ipc.createRequest(parent.path, blankRequestFile(name)),
+  );
+  if (!m) return;
+  applyMutation(m);
+  useWorkspaceStore.getState().toggle(parent.path, true);
+  await openRequest(m.path);
+}
+
+export async function renameNode(node: NodeEntry) {
+  const name = await useDialogs.getState().askName({
+    title: `Rename ${noun(node)}`,
+    initial: node.name,
+    confirmLabel: "Rename",
+  });
+  if (!name || name === node.name) return;
+  const m = await guarded("Could not rename", () => ipc.renameNode(node.path, name));
+  if (!m) return;
+  applyMutation(m);
+  useWorkspaceStore.getState().remapExpanded(node.path, m.path);
+  useTabsStore.getState().retarget(node.path, m.path, node.kind === "request" ? name : undefined);
+}
+
+export async function duplicateNode(node: NodeEntry) {
+  const m = await guarded("Could not duplicate", () => ipc.duplicateNode(node.path));
+  if (m) applyMutation(m);
+}
+
+export async function deleteNode(node: NodeEntry) {
+  const ok = await useDialogs.getState().askConfirm({
+    title: `Delete "${node.name}"?`,
+    description:
+      node.kind === "request"
+        ? "This permanently deletes the request file."
+        : `This permanently deletes the ${noun(node)} and everything inside it.`,
+    confirmLabel: "Delete",
+    destructive: true,
+  });
+  if (!ok) return;
+  const info = await guarded("Could not delete", () => ipc.deleteNode(node.path));
+  if (!info) return;
+  useWorkspaceStore.getState().apply(info);
+  const kept = useTabsStore.getState().detachUnder(node.path);
+  if (kept > 0)
+    toast.info(`${kept} open tab${kept === 1 ? " was" : "s were"} kept as unsaved drafts`);
 }
