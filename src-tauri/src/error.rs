@@ -19,6 +19,10 @@ pub enum AppError {
     Timeout(String),
     #[error("{0}")]
     Cancelled(String),
+    #[error("not found: {0}")]
+    NotFound(String),
+    #[error("{0}")]
+    Unsupported(String),
 }
 
 impl From<std::io::Error> for AppError {
