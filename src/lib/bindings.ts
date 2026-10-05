@@ -51,6 +51,78 @@ async refreshWorkspace() : Promise<Result<WorkspaceInfo, AppError>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async createCollection(name: string) : Promise<Result<Mutation, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_collection", { name }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async createFolder(parentPath: string, name: string) : Promise<Result<Mutation, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_folder", { parentPath, name }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async createRequest(parentPath: string, request: RequestFile) : Promise<Result<Mutation, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_request", { parentPath, request }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async renameNode(path: string, newName: string) : Promise<Result<Mutation, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("rename_node", { path, newName }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async duplicateNode(path: string) : Promise<Result<Mutation, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("duplicate_node", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteNode(path: string) : Promise<Result<WorkspaceInfo, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_node", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async loadRequest(path: string) : Promise<Result<RequestFile, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("load_request", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async saveRequest(path: string, request: RequestFile) : Promise<Result<null, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("save_request", { path, request }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async moveNode(path: string, newParentPath: string, order: string[]) : Promise<Result<Mutation, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("move_node", { path, newParentPath, order }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -70,8 +142,14 @@ async refreshWorkspace() : Promise<Result<WorkspaceInfo, AppError>> {
  */
 export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string } | { kind: "Network"; message: string } | { kind: "Timeout"; message: string } | { kind: "Cancelled"; message: string } | { kind: "NotFound"; message: string } | { kind: "Unsupported"; message: string }
 export type BodyEncoding = "utf8" | "base64"
+export type BodyFile = { mode: BodyMode; json?: string; raw?: string; rawMime?: string; form?: KeyValue[] }
+export type BodyMode = "none" | "json" | "raw" | "form"
 export type HeaderEntry = { name: string; value: string }
 export type KeyValue = { key: string; value: string; enabled: boolean }
+/**
+ * Result of a tree mutation: the affected node's (new) path plus a fresh tree.
+ */
+export type Mutation = { path: string; info: WorkspaceInfo }
 /**
  * One row of the flattened, depth-first tree.
  */
@@ -83,6 +161,10 @@ path: string; parentPath: string | null; depth: number; method: string | null }
 export type NodeKind = "collection" | "folder" | "request"
 export type PingResponse = { reply: string; appVersion: string }
 export type RequestBody = { type: "none" } | { type: "json"; content: string } | { type: "raw"; content: string; mime: string } | { type: "formUrlEncoded"; fields: KeyValue[] }
+/**
+ * <name>.request.json. Mirrors the editor state so nothing is lost between body modes.
+ */
+export type RequestFile = { schemaVersion: number; id: string; name: string; method: string; url: string; params?: KeyValue[]; headers?: KeyValue[]; body: BodyFile; settings: RequestSettings }
 export type RequestSettings = { 
 /**
  * 0 means no timeout.

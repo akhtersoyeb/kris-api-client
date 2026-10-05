@@ -176,3 +176,17 @@ pub async fn save_request(
     let root = state.root()?;
     blocking(move || store::save_request(&root, &path, request)).await
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn move_node(
+    state: State<'_, WorkspaceState>,
+    path: String,
+    new_parent_path: String,
+    order: Vec<String>,
+) -> AppResult<Mutation> {
+    mutate(state.inner(), move |root| {
+        store::move_node(root, &path, &new_parent_path, &order)
+    })
+    .await
+}

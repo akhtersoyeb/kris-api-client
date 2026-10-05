@@ -513,3 +513,52 @@ pub fn duplicate_node(root: &Path, rel: &str) -> AppResult<String> {
     })?;
     Ok(to_rel(root, &target))
 }
+
+/// Moves `rel` under `new_parent` ("" = top level, for reordering collections) and sets the
+/// parent's child order to `order` (full list of child ids, including the moved node).
+/// Returns the node's new path.
+pub fn move_node(root: &Path, rel: &str, new_parent: &str, order: &[String]) -> AppResult<String> {
+    ensure_node(rel)?;
+    let abs = safe_join(root, rel)?;
+    let old_parent = parent_rel(rel);
+    let id = node_id(root, rel)?;
+    let new_parent_meta = container_meta(root, new_parent)?; // also validates new_parent
+    let mut new_rel = rel.to_string();
+
+    if old_parent != new_parent {
+        let is_collection = !is_request(rel) && depth_of(rel) == 2;
+        if is_collection || new_parent.is_empty() {
+            return Err(AppError::InvalidInput(
+                "collections can only be reordered, and folders and requests must live in a collection".into(),
+            ));
+        }
+        let new_dir = safe_join(root, new_parent)?;
+        if new_dir.starts_with(&abs) {
+            return Err(AppError::InvalidInput(
+                "a folder can't be moved into itself".into(),
+            ));
+        }
+        let file_name = abs
+            .file_name()
+            .map(|f| f.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let target = if is_request(rel) {
+            unique_path(
+                &new_dir,
+                file_name.trim_end_matches(REQUEST_SUFFIX),
+                REQUEST_SUFFIX,
+            )
+        } else {
+            unique_path(&new_dir, &file_name, "")
+        };
+        std::fs::rename(&abs, &target)?;
+        new_rel = to_rel(root, &target);
+        update_container(&container_meta(root, &old_parent)?, |c| {
+            c.order.retain(|x| *x != id)
+        })?;
+    }
+
+    let order = order.to_vec();
+    update_container(&new_parent_meta, |c| c.order = order)?;
+    Ok(new_rel)
+}
