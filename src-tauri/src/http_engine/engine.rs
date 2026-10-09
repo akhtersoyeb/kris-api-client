@@ -88,6 +88,7 @@ pub async fn execute(state: &HttpState, spec: RequestSpec) -> AppResult<Response
         duration_ms,
         final_url,
         content_type,
+        unresolved: Vec::new(),
     })
 }
 

@@ -25,8 +25,12 @@ export async function unwrap<T>(call: Promise<Result<T, AppError>>): Promise<T> 
 /** Single entry point for all backend calls. Add one line per new command. */
 export const ipc = {
   ping: (message: string) => unwrap(commands.ping(message)),
-  sendRequest: (requestId: string, spec: RequestSpec) =>
-    unwrap(commands.sendRequest(requestId, spec)),
+  sendRequest: (
+    requestId: string,
+    spec: RequestSpec,
+    environmentId: string | null,
+    requestPath: string | null,
+  ) => unwrap(commands.sendRequest(requestId, spec, environmentId, requestPath)),
   cancelRequest: (requestId: string) => commands.cancelRequest(requestId),
 
   openWorkspace: (path: string) => unwrap(commands.openWorkspace(path)),

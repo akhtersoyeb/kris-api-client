@@ -47,7 +47,7 @@ export const useResponsesStore = create<ResponsesState>()((set, get) => {
       };
 
       try {
-        const response = await ipc.sendRequest(requestId, buildRequestSpec(tab));
+        const response = await ipc.sendRequest(requestId, buildRequestSpec(tab), null, tab.path);
         if (isCurrent()) setRun(tabId, { phase: "done", response });
       } catch (e) {
         if (!isCurrent()) return;

@@ -8,6 +8,9 @@ use crate::workspace::{store, WorkspaceInfo, WorkspaceState};
 use crate::workspace::schema::RequestFile;
 use crate::workspace::Mutation;
 
+use crate::variables::scopes;
+use crate::variables::SecretsState;
+
 use crate::workspace::recents::RecentWorkspace;
 use crate::workspace::{recents, schema::WORKSPACE_FILE, sessions};
 use tauri::Manager;
@@ -159,9 +162,12 @@ pub async fn duplicate_node(state: State<'_, WorkspaceState>, path: String) -> A
 #[specta::specta]
 pub async fn delete_node(
     state: State<'_, WorkspaceState>,
+    secrets: State<'_, SecretsState>,
     path: String,
 ) -> AppResult<WorkspaceInfo> {
+    let store = secrets.store.clone();
     let result = mutate(state.inner(), move |root| {
+        scopes::purge_collection_secrets(root, store.as_ref(), &path);
         store::delete_node(root, &path)?;
         Ok(String::new())
     })

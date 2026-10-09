@@ -1,3 +1,4 @@
+use crate::variables::Variable;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -21,9 +22,11 @@ pub struct ContainerFile {
     pub schema_version: u32,
     pub id: String,
     pub name: String,
-    /// Child ids in display order. Children not listed here sort after, by name.
     #[serde(default)]
     pub order: Vec<String>,
+    /// Workspace: global variables. Collection: its variables. Unused on folders.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub variables: Vec<Variable>,
 }
 
 impl ContainerFile {
@@ -33,6 +36,7 @@ impl ContainerFile {
             id: new_id(),
             name: name.to_string(),
             order: Vec::new(),
+            variables: Vec::new(),
         }
     }
 }

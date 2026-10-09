@@ -23,6 +23,8 @@ pub enum AppError {
     NotFound(String),
     #[error("{0}")]
     Unsupported(String),
+    #[error("system keychain unavailable: {0}")]
+    Keychain(String),
 }
 
 impl From<std::io::Error> for AppError {

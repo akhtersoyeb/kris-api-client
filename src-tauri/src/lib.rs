@@ -1,7 +1,11 @@
 mod commands;
 mod error;
 mod http_engine;
+mod variables;
 mod workspace;
+use crate::variables::SecretsState;
+
+use tauri::Manager;
 
 #[cfg(debug_assertions)]
 use specta_typescript::Typescript;
@@ -30,6 +34,16 @@ pub fn run() {
         commands::workspace::forget_recent_workspace,
         commands::workspace::save_session,
         commands::workspace::load_session,
+        commands::variables::list_environments,
+        commands::variables::create_environment,
+        commands::variables::load_environment,
+        commands::variables::save_environment,
+        commands::variables::duplicate_environment,
+        commands::variables::delete_environment,
+        commands::variables::get_scope_variables,
+        commands::variables::set_scope_variables,
+        commands::variables::variable_context,
+        commands::variables::resolve_preview,
     ]);
 
     // Regenerate TypeScript bindings on every dev run. The file is committed.
@@ -48,6 +62,9 @@ pub fn run() {
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
+            app.manage(SecretsState::new(variables::secrets::KeyringStore::new(
+                &app.config().identifier,
+            )));
             Ok(())
         })
         .run(tauri::generate_context!())

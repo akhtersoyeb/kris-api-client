@@ -21,6 +21,7 @@ const response: ResponseSpec = {
   durationMs: 5,
   finalUrl: "https://x.dev/",
   contentType: "application/json",
+  unresolved: [],
 };
 
 const store = () => useResponsesStore.getState();

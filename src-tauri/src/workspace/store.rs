@@ -562,3 +562,9 @@ pub fn move_node(root: &Path, rel: &str, new_parent: &str, order: &[String]) -> 
     update_container(&new_parent_meta, |c| c.order = order)?;
     Ok(new_rel)
 }
+
+/// Reads any versioned JSON file: valid JSON, not from a newer app version, and the right shape.
+pub(crate) fn read_typed<T: serde::de::DeserializeOwned>(path: &Path) -> AppResult<T> {
+    serde_json::from_value(read_checked(path)?)
+        .map_err(|e| AppError::InvalidInput(format!("{}: {e}", label(path))))
+}

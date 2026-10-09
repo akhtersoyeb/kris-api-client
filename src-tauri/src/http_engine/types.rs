@@ -64,4 +64,6 @@ pub struct ResponseSpec {
     pub duration_ms: u32,
     pub final_url: String,
     pub content_type: Option<String>,
+    /// Variables that were left as literal text because they weren't defined.
+    pub unresolved: Vec<String>,
 }

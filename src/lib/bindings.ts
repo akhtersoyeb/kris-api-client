@@ -14,9 +14,9 @@ async ping(message: string) : Promise<Result<PingResponse, AppError>> {
     else return { status: "error", error: e  as any };
 }
 },
-async sendRequest(requestId: string, spec: RequestSpec) : Promise<Result<ResponseSpec, AppError>> {
+async sendRequest(requestId: string, spec: RequestSpec, environmentId: string | null, requestPath: string | null) : Promise<Result<ResponseSpec, AppError>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("send_request", { requestId, spec }) };
+    return { status: "ok", data: await TAURI_INVOKE("send_request", { requestId, spec, environmentId, requestPath }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -155,6 +155,92 @@ async loadSession(workspaceId: string) : Promise<Result<string | null, AppError>
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async listEnvironments() : Promise<Result<EnvironmentSummary[], AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_environments") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async createEnvironment(name: string) : Promise<Result<Environment, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_environment", { name }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async loadEnvironment(id: string) : Promise<Result<Environment, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("load_environment", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async saveEnvironment(environment: Environment) : Promise<Result<Environment, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("save_environment", { environment }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async duplicateEnvironment(id: string) : Promise<Result<Environment, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("duplicate_environment", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteEnvironment(id: string) : Promise<Result<null, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_environment", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getScopeVariables(scope: ScopeRef) : Promise<Result<ScopeVariables, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_scope_variables", { scope }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setScopeVariables(scope: ScopeRef, variables: Variable[]) : Promise<Result<ScopeVariables, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_scope_variables", { scope, variables }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Effective variables for the given environment and request (no secret values, no keychain access).
+ */
+async variableContext(environmentId: string | null, requestPath: string | null) : Promise<Result<VariableInfo[], AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("variable_context", { environmentId, requestPath }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Resolves text for display (tooltips). Dynamic variables are evaluated, secrets show as empty.
+ */
+async resolvePreview(texts: string[], environmentId: string | null, requestPath: string | null) : Promise<Result<Resolution[], AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("resolve_preview", { texts, environmentId, requestPath }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -172,10 +258,19 @@ async loadSession(workspaceId: string) : Promise<Result<string | null, AppError>
  * Error returned from every Tauri command. Serializes to
  * `{ "kind": "InvalidInput", "message": "..." }`, so the UI can switch on `kind`.
  */
-export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string } | { kind: "Network"; message: string } | { kind: "Timeout"; message: string } | { kind: "Cancelled"; message: string } | { kind: "NotFound"; message: string } | { kind: "Unsupported"; message: string }
+export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string } | { kind: "Network"; message: string } | { kind: "Timeout"; message: string } | { kind: "Cancelled"; message: string } | { kind: "NotFound"; message: string } | { kind: "Unsupported"; message: string } | { kind: "Keychain"; message: string }
 export type BodyEncoding = "utf8" | "base64"
 export type BodyFile = { mode: BodyMode; json?: string; raw?: string; rawMime?: string; form?: KeyValue[] }
 export type BodyMode = "none" | "json" | "raw" | "form"
+/**
+ * What the UI edits: secret values are filled in from the keychain.
+ */
+export type Environment = { id: string; name: string; variables: Variable[]; 
+/**
+ * Set when the keychain couldn't be read; secret values are then empty.
+ */
+secretsError?: string | null }
+export type EnvironmentSummary = { id: string; name: string }
 export type HeaderEntry = { name: string; value: string }
 export type KeyValue = { key: string; value: string; enabled: boolean }
 /**
@@ -208,7 +303,32 @@ export type RequestSpec = { method: string;
  * Final URL including the query string.
  */
 url: string; headers: KeyValue[]; body: RequestBody; settings: RequestSettings }
-export type ResponseSpec = { status: number; statusText: string; httpVersion: string; headers: HeaderEntry[]; body: string; bodyEncoding: BodyEncoding; bodyTruncated: boolean; sizeBytes: number; durationMs: number; finalUrl: string; contentType: string | null }
+export type Resolution = { text: string; 
+/**
+ * Variable names that weren't defined.
+ */
+unresolved: string[]; 
+/**
+ * Variable names that reference themselves.
+ */
+cyclic: string[] }
+export type ResponseSpec = { status: number; statusText: string; httpVersion: string; headers: HeaderEntry[]; body: string; bodyEncoding: BodyEncoding; bodyTruncated: boolean; sizeBytes: number; durationMs: number; finalUrl: string; contentType: string | null; 
+/**
+ * Variables that were left as literal text because they weren't defined.
+ */
+unresolved: string[] }
+export type ScopeRef = { type: "global" } | { type: "collection"; path: string }
+export type ScopeVariables = { variables: Variable[]; secretsError: string | null }
+export type Variable = { key: string; value?: string; enabled?: boolean; 
+/**
+ * Secret values live in the OS keychain, never in workspace files.
+ */
+secret?: boolean }
+/**
+ * One effective variable as the UI sees it (secret values are never included).
+ */
+export type VariableInfo = { name: string; scope: VariableScope; secret: boolean; value: string }
+export type VariableScope = "builtin" | "global" | "collection" | "environment"
 export type WorkspaceInfo = { id: string; root: string; name: string; nodes: NodeEntry[]; 
 /**
  * Files that were skipped (invalid JSON, newer schema, ...).
