@@ -1,4 +1,12 @@
-import { commands, type AppError, type RequestFile, type RequestSpec } from "@/lib/bindings";
+import {
+  commands,
+  type AppError,
+  type RequestFile,
+  type RequestSpec,
+  type Environment,
+  type ScopeRef,
+  type Variable,
+} from "@/lib/bindings";
 
 type Result<T, E> = { status: "ok"; data: T } | { status: "error"; error: E };
 
@@ -58,4 +66,17 @@ export const ipc = {
   saveSession: (workspaceId: string, json: string) =>
     unwrap(commands.saveSession(workspaceId, json)),
   loadSession: (workspaceId: string) => unwrap(commands.loadSession(workspaceId)),
+  listEnvironments: () => unwrap(commands.listEnvironments()),
+  createEnvironment: (name: string) => unwrap(commands.createEnvironment(name)),
+  loadEnvironment: (id: string) => unwrap(commands.loadEnvironment(id)),
+  saveEnvironment: (environment: Environment) => unwrap(commands.saveEnvironment(environment)),
+  duplicateEnvironment: (id: string) => unwrap(commands.duplicateEnvironment(id)),
+  deleteEnvironment: (id: string) => unwrap(commands.deleteEnvironment(id)),
+  getScopeVariables: (scope: ScopeRef) => unwrap(commands.getScopeVariables(scope)),
+  setScopeVariables: (scope: ScopeRef, variables: Variable[]) =>
+    unwrap(commands.setScopeVariables(scope, variables)),
+  variableContext: (environmentId: string | null, requestPath: string | null) =>
+    unwrap(commands.variableContext(environmentId, requestPath)),
+  resolvePreview: (texts: string[], environmentId: string | null, requestPath: string | null) =>
+    unwrap(commands.resolvePreview(texts, environmentId, requestPath)),
 };

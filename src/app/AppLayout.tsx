@@ -10,8 +10,10 @@ import { closeWorkspace } from "@/features/workspace/actions";
 import { useWorkspaceStore } from "@/store/workspace";
 import { useEffect } from "react";
 import { saveActiveTab } from "@/features/workspace/save";
+import { useVariablesSync } from "@/features/variables/useVariablesSync";
 
 export function AppLayout() {
+  useVariablesSync();
   const workspaceName = useWorkspaceStore((s) => s.info?.name ?? "");
 
   useEffect(() => {
