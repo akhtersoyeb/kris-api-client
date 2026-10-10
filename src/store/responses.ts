@@ -3,6 +3,7 @@ import type { ResponseSpec } from "@/lib/bindings";
 import { IpcError, ipc } from "@/lib/ipc";
 import { buildRequestSpec } from "@/features/request-editor/spec";
 import { useTabsStore } from "@/store/tabs";
+import { useVariablesStore } from "@/store/variables";
 
 export interface RunError {
   kind: string;
@@ -47,7 +48,12 @@ export const useResponsesStore = create<ResponsesState>()((set, get) => {
       };
 
       try {
-        const response = await ipc.sendRequest(requestId, buildRequestSpec(tab), null, tab.path);
+        const response = await ipc.sendRequest(
+          requestId,
+          buildRequestSpec(tab),
+          useVariablesStore.getState().activeEnvId,
+          tab.path,
+        );
         if (isCurrent()) setRun(tabId, { phase: "done", response });
       } catch (e) {
         if (!isCurrent()) return;

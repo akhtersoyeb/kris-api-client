@@ -60,6 +60,7 @@ export function BodyTab({ tab }: { tab: RequestTab }) {
         )}
         {body.mode === "json" && (
           <CodeEditor
+            highlightVariables
             path={`${tab.id}/body.json`}
             language="json"
             value={body.json}
@@ -68,6 +69,7 @@ export function BodyTab({ tab }: { tab: RequestTab }) {
         )}
         {body.mode === "raw" && (
           <CodeEditor
+            highlightVariables
             path={`${tab.id}/body.raw`}
             language={rawLanguage}
             value={body.raw}

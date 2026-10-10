@@ -27,6 +27,15 @@ export function ResponsePane() {
   return (
     <div className="flex h-full flex-col">
       <SummaryBar response={response} />
+      {response.unresolved.length > 0 && (
+        <div className="border-b bg-amber-500/10 px-3 py-1.5 text-xs">
+          Not defined, so sent as written:{" "}
+          {response.unresolved.map((n) => (
+            <code key={n} className="mr-1 rounded bg-muted px-1">{`{{${n}}}`}</code>
+          ))}
+          Select an environment or define them under Variables.
+        </div>
+      )}
       <Tabs defaultValue="body" className="flex min-h-0 flex-1 flex-col gap-0">
         <TabsList className="mx-3 mt-2 w-fit">
           <TabsTrigger value="body">Body</TabsTrigger>
