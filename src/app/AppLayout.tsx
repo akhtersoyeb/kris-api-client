@@ -11,6 +11,8 @@ import { useWorkspaceStore } from "@/store/workspace";
 import { useEffect } from "react";
 import { saveActiveTab } from "@/features/workspace/save";
 import { useVariablesSync } from "@/features/variables/useVariablesSync";
+import { EnvironmentSelector } from "@/features/variables/EnvironmentSelector";
+import { VariablesDialog } from "@/features/variables/VariablesDialog";
 
 export function AppLayout() {
   useVariablesSync();
@@ -32,6 +34,7 @@ export function AppLayout() {
       <header className="flex h-10 items-center justify-between border-b px-3">
         <span className="text-sm font-semibold">{workspaceName}</span>
         <div className="flex items-center gap-1">
+          <EnvironmentSelector />
           <Button
             variant="ghost"
             size="sm"
@@ -52,7 +55,6 @@ export function AppLayout() {
         <ResizablePanel defaultSize={78}>
           <div className="flex h-full flex-col">
             <TabBar />
-            <CommandPalette />
             <ResizablePanelGroup orientation="vertical" className="flex-1">
               <ResizablePanel defaultSize={50} minSize={20}>
                 <RequestPane />
@@ -65,6 +67,8 @@ export function AppLayout() {
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+      <CommandPalette />
+      <VariablesDialog />
     </div>
   );
 }

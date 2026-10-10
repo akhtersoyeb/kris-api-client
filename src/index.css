@@ -128,3 +128,14 @@
     @apply font-sans;
   }
 }
+
+/* {{variable}} highlighting inside Monaco editors */
+.var-known {
+  background-color: color-mix(in oklab, var(--primary) 20%, transparent);
+  border-radius: 3px;
+}
+.var-unknown {
+  background-color: color-mix(in oklab, #f59e0b 30%, transparent);
+  border-radius: 3px;
+  text-decoration: underline wavy #d97706;
+}

@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { VariableInput } from "@/features/variables/VariableInput";
 import type { KeyValueRow } from "@/store/request-draft";
 
 interface Props {
@@ -55,20 +55,22 @@ export function KeyValueEditor({
             checked={row.enabled}
             onChange={(e) => patch(row, phantom, { enabled: e.target.checked })}
           />
-          <Input
+          <VariableInput
             list={suggestions ? listId : undefined}
             value={row.key}
             placeholder={keyPlaceholder}
             spellCheck={false}
-            className="h-8 flex-1 font-mono text-xs"
-            onChange={(e) => patch(row, phantom, { key: e.target.value })}
+            className="flex-1"
+            inputClassName="h-8 font-mono"
+            onChange={(key) => patch(row, phantom, { key })}
           />
-          <Input
+          <VariableInput
             value={row.value}
             placeholder={valuePlaceholder}
             spellCheck={false}
-            className="h-8 flex-1 font-mono text-xs"
-            onChange={(e) => patch(row, phantom, { value: e.target.value })}
+            className="flex-1"
+            inputClassName="h-8 font-mono"
+            onChange={(value) => patch(row, phantom, { value })}
           />
           <Button
             variant="ghost"

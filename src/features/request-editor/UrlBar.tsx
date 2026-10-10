@@ -1,6 +1,6 @@
 import { Save, Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { VariableInput } from "@/features/variables/VariableInput";
 import {
   Select,
   SelectContent,
@@ -43,18 +43,14 @@ export function UrlBar({ tab }: { tab: RequestTab }) {
         </SelectContent>
       </Select>
 
-      <Input
+      <VariableInput
         value={tab.url}
-        placeholder="https://api.example.com/users?limit=10"
+        placeholder="https://{{host}}/users?limit=10"
         spellCheck={false}
         aria-label="Request URL"
-        className="flex-1 font-mono"
-        onChange={(e) =>
-          updateTab(tab.id, {
-            url: e.target.value,
-            params: syncParamsFromUrl(e.target.value, tab.params),
-          })
-        }
+        className="flex-1"
+        inputClassName="font-mono"
+        onChange={(url) => updateTab(tab.id, { url, params: syncParamsFromUrl(url, tab.params) })}
       />
 
       <Button
