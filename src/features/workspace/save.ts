@@ -7,6 +7,8 @@ import { useWorkspaceStore } from "@/store/workspace";
 import { errorMessage, refreshTree } from "./actions";
 import type { RequestFile } from "@/lib/bindings";
 import { isUnder } from "@/lib/paths";
+import { loadEnvironments } from "@/features/variables/actions";
+import { useVariablesStore } from "@/store/variables";
 
 const getTab = (id: string) => useTabsStore.getState().tabs.find((t) => t.id === id);
 
@@ -122,6 +124,13 @@ export async function keepMine(tabId: string) {
 
 export async function handleExternalChange(paths: string[]) {
   await refreshTree();
+  const touchesVariables = paths.some(
+    (p) => p.startsWith("environments/") || p === "workspace.json" || p.endsWith("collection.json"),
+  );
+  if (touchesVariables) {
+    await loadEnvironments();
+    useVariablesStore.getState().bump();
+  }
   const touched = (tabPath: string) => paths.some((p) => p !== "" && isUnder(tabPath, p));
   const affected = useTabsStore.getState().tabs.filter((t) => t.path && touched(t.path));
   await Promise.all(affected.map((t) => syncTabWithDisk(t.id)));

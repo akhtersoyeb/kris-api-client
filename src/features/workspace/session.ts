@@ -3,12 +3,14 @@ import { isDirty } from "@/store/request-doc";
 import { useTabsStore, type RequestTab } from "@/store/tabs";
 import { useWorkspaceStore } from "@/store/workspace";
 import { syncTabWithDisk } from "./save";
+import { useVariablesStore } from "@/store/variables";
 
 type SessionTab = Omit<RequestTab, "conflict">; // conflicts are re-detected on restore
 
 interface Session {
   version: 1;
   activeTabId: string | null;
+  activeEnvId: string | null;
   expanded: string[];
   tabs: SessionTab[];
 }
@@ -21,6 +23,7 @@ function build(): Session {
   return {
     version: 1,
     activeTabId,
+    activeEnvId: useVariablesStore.getState().activeEnvId,
     expanded: Object.keys(useWorkspaceStore.getState().expanded),
     tabs: tabs.map(({ conflict: _conflict, ...rest }) => rest),
   };
@@ -52,9 +55,13 @@ export function startSessionAutosave(): () => void {
   const stopWorkspace = useWorkspaceStore.subscribe((s, prev) => {
     if (s.expanded !== prev.expanded) scheduleSessionSave();
   });
+  const stopVariables = useVariablesStore.subscribe((s, prev) => {
+    if (s.activeEnvId !== prev.activeEnvId) scheduleSessionSave();
+  });
   return () => {
     stopTabs();
     stopWorkspace();
+    stopVariables();
   };
 }
 
@@ -79,6 +86,7 @@ function parse(raw: string): Session | null {
     return {
       version: 1,
       activeTabId: typeof data.activeTabId === "string" ? data.activeTabId : null,
+      activeEnvId: typeof data.activeEnvId === "string" ? data.activeEnvId : null,
       expanded: Array.isArray(data.expanded)
         ? data.expanded.filter((p) => typeof p === "string")
         : [],
@@ -94,7 +102,9 @@ export async function restoreSession(workspaceId: string) {
   try {
     const raw = await ipc.loadSession(workspaceId).catch(() => null);
     const session = raw ? parse(raw) : null;
-    if (!session || session.tabs.length === 0) return;
+    if (!session) return;
+    useVariablesStore.getState().setActive(session.activeEnvId);
+    if (session.tabs.length === 0) return;
 
     const tabs = session.tabs.map((t) => {
       const tab: RequestTab = { ...t, conflict: false, dirty: false };
