@@ -1,6 +1,8 @@
 #![allow(dead_code)] // removed in R5, once everything is wired up
 
 pub mod db;
+pub mod recorder;
+pub mod redact;
 pub mod settings;
 pub mod types;
 
