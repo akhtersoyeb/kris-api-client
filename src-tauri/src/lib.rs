@@ -66,6 +66,7 @@ pub fn run() {
             app.manage(SecretsState::new(variables::secrets::KeyringStore::new(
                 &app.config().identifier,
             )));
+            app.manage(history::SettingsState::load(app.path().app_data_dir()?));
             Ok(())
         })
         .run(tauri::generate_context!())

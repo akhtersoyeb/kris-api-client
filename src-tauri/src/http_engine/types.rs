@@ -17,7 +17,7 @@ pub struct RequestSettings {
     pub follow_redirects: bool,
 }
 
-#[derive(Debug, Clone, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum RequestBody {
     None,
@@ -26,7 +26,7 @@ pub enum RequestBody {
     FormUrlEncoded { fields: Vec<KeyValue> },
 }
 
-#[derive(Debug, Clone, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestSpec {
     pub method: String,
