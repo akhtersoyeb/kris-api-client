@@ -1,5 +1,3 @@
-use tauri::State;
-
 use crate::commands::workspace::blocking;
 use crate::error::AppResult;
 use crate::http_engine::{self, HttpState, RequestSpec, ResponseSpec};

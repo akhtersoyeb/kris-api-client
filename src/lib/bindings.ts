@@ -241,6 +241,60 @@ async resolvePreview(texts: string[], environmentId: string | null, requestPath:
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async listHistory(limit: number, offset: number) : Promise<Result<HistoryEntry[], AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_history", { limit, offset }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async searchHistory(query: string, limit: number) : Promise<Result<HistoryEntry[], AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("search_history", { query, limit }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getHistoryRequest(id: number) : Promise<Result<RequestSpec, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_history_request", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteHistoryEntry(id: number) : Promise<Result<null, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_history_entry", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearHistory() : Promise<Result<null, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_history") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getAppSettings() : Promise<AppSettings> {
+    return await TAURI_INVOKE("get_app_settings");
+},
+/**
+ * Saves the settings, then applies the new retention limits to the open workspace right away.
+ */
+async setAppSettings(newSettings: AppSettings) : Promise<Result<AppSettings, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_app_settings", { newSettings }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -258,7 +312,8 @@ async resolvePreview(texts: string[], environmentId: string | null, requestPath:
  * Error returned from every Tauri command. Serializes to
  * `{ "kind": "InvalidInput", "message": "..." }`, so the UI can switch on `kind`.
  */
-export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string } | { kind: "Network"; message: string } | { kind: "Timeout"; message: string } | { kind: "Cancelled"; message: string } | { kind: "NotFound"; message: string } | { kind: "Unsupported"; message: string } | { kind: "Keychain"; message: string }
+export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string } | { kind: "Network"; message: string } | { kind: "Timeout"; message: string } | { kind: "Cancelled"; message: string } | { kind: "NotFound"; message: string } | { kind: "Unsupported"; message: string } | { kind: "Keychain"; message: string } | { kind: "Storage"; message: string }
+export type AppSettings = { history: HistorySettings }
 export type BodyEncoding = "utf8" | "base64"
 export type BodyFile = { mode: BodyMode; json?: string; raw?: string; rawMime?: string; form?: KeyValue[] }
 export type BodyMode = "none" | "json" | "raw" | "form"
@@ -272,6 +327,31 @@ export type Environment = { id: string; name: string; variables: Variable[];
 secretsError?: string | null }
 export type EnvironmentSummary = { id: string; name: string }
 export type HeaderEntry = { name: string; value: string }
+/**
+ * A row as the sidebar and palette show it. The full request is fetched separately when reopening.
+ */
+export type HistoryEntry = { id: number; 
+/**
+ * Unix milliseconds (a float so it stays a plain JS number).
+ */
+ts: number; method: string; url: string; 
+/**
+ * None when the request failed before a response arrived.
+ */
+status: number | null; durationMs: number | null; sizeBytes: number | null; error: string | null; environment: string | null; requestPath: string | null }
+export type HistorySettings = { enabled: boolean; 
+/**
+ * Mask secrets in headers, URL credentials, sensitive query parameters and form fields.
+ */
+redactSecrets: boolean; 
+/**
+ * Keep JSON/raw/form bodies so entries can be reopened exactly.
+ */
+storeBodies: boolean; 
+/**
+ * 0 keeps entries until the count limit removes them.
+ */
+retentionDays: number; maxEntries: number }
 export type KeyValue = { key: string; value: string; enabled: boolean }
 /**
  * Result of a tree mutation: the affected node's (new) path plus a fresh tree.

@@ -45,6 +45,13 @@ pub fn run() {
         commands::variables::set_scope_variables,
         commands::variables::variable_context,
         commands::variables::resolve_preview,
+        commands::history::list_history,
+        commands::history::search_history,
+        commands::history::get_history_request,
+        commands::history::delete_history_entry,
+        commands::history::clear_history,
+        commands::history::get_app_settings,
+        commands::history::set_app_settings,
     ]);
 
     // Regenerate TypeScript bindings on every dev run. The file is committed.
