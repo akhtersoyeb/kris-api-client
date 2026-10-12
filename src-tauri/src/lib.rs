@@ -1,5 +1,6 @@
 mod commands;
 mod error;
+mod history;
 mod http_engine;
 mod variables;
 mod workspace;

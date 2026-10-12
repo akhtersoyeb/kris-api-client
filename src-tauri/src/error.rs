@@ -25,11 +25,19 @@ pub enum AppError {
     Unsupported(String),
     #[error("system keychain unavailable: {0}")]
     Keychain(String),
+    #[error("history database error: {0}")]
+    Storage(String),
 }
 
 impl From<std::io::Error> for AppError {
     fn from(e: std::io::Error) -> Self {
         AppError::Io(e.to_string())
+    }
+}
+
+impl From<rusqlite::Error> for AppError {
+    fn from(e: rusqlite::Error) -> Self {
+        AppError::Storage(e.to_string())
     }
 }
 
