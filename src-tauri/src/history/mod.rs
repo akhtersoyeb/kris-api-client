@@ -1,4 +1,5 @@
-#![allow(dead_code)] // removed in R5, once everything is wired up
+#[cfg(test)]
+mod tests;
 
 pub mod db;
 pub mod recorder;

@@ -12,6 +12,7 @@ import type { NodeEntry } from "@/lib/bindings";
 import { flushSession, restoreSession } from "./session";
 import { loadEnvironments } from "@/features/variables/actions";
 import { useVariablesStore } from "@/store/variables";
+import { refreshHistory, resetHistory } from "@/features/history/actions";
 
 export const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -32,11 +33,13 @@ export async function activateWorkspace(info: WorkspaceInfo) {
   useResponsesStore.setState({ runs: {} });
   useTabsStore.getState().reset();
   useVariablesStore.getState().reset();
+  resetHistory();
   const workspace = useWorkspaceStore.getState();
   workspace.apply(info);
   workspace.setExpanded(info.nodes.filter((n) => n.kind === "collection").map((n) => n.path));
   await restoreSession(info.id);
   await loadEnvironments();
+  void refreshHistory();
   if (useTabsStore.getState().tabs.length === 0) useTabsStore.getState().openTab();
 }
 
@@ -69,6 +72,7 @@ export async function closeWorkspace() {
   useResponsesStore.setState({ runs: {} });
   useTabsStore.getState().reset();
   useVariablesStore.getState().reset();
+  resetHistory();
   useWorkspaceStore.getState().clear();
   void refreshRecents();
 }

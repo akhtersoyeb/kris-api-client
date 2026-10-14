@@ -4,6 +4,7 @@ import { IpcError, ipc } from "@/lib/ipc";
 import { buildRequestSpec } from "@/features/request-editor/spec";
 import { useTabsStore } from "@/store/tabs";
 import { useVariablesStore } from "@/store/variables";
+import { refreshHistory } from "@/features/history/actions";
 
 export interface RunError {
   kind: string;
@@ -55,13 +56,22 @@ export const useResponsesStore = create<ResponsesState>()((set, get) => {
           tab.path,
         );
         if (isCurrent()) setRun(tabId, { phase: "done", response });
+        void refreshHistory();
       } catch (e) {
         if (!isCurrent()) return;
+        if (e instanceof IpcError && e.kind === "Cancelled") {
+          removeRun(tabId);
+          return;
+        }
         if (e instanceof IpcError) {
           if (e.kind === "Cancelled") removeRun(tabId);
-          else setRun(tabId, { phase: "error", error: { kind: e.kind, message: e.message } });
+          else {
+            setRun(tabId, { phase: "error", error: { kind: e.kind, message: e.message } });
+            void refreshHistory();
+          }
         } else {
           setRun(tabId, { phase: "error", error: { kind: "Internal", message: String(e) } });
+          void refreshHistory();
         }
       }
     },

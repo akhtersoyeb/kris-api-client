@@ -1,5 +1,6 @@
 import {
   commands,
+  type AppSettings,
   type AppError,
   type RequestFile,
   type RequestSpec,
@@ -79,4 +80,12 @@ export const ipc = {
     unwrap(commands.variableContext(environmentId, requestPath)),
   resolvePreview: (texts: string[], environmentId: string | null, requestPath: string | null) =>
     unwrap(commands.resolvePreview(texts, environmentId, requestPath)),
+
+  listHistory: (limit: number, offset: number) => unwrap(commands.listHistory(limit, offset)),
+  searchHistory: (query: string, limit: number) => unwrap(commands.searchHistory(query, limit)),
+  getHistoryRequest: (id: number) => unwrap(commands.getHistoryRequest(id)),
+  deleteHistoryEntry: (id: number) => unwrap(commands.deleteHistoryEntry(id)),
+  clearHistory: () => unwrap(commands.clearHistory()),
+  getAppSettings: () => commands.getAppSettings(),
+  setAppSettings: (settings: AppSettings) => unwrap(commands.setAppSettings(settings)),
 };
