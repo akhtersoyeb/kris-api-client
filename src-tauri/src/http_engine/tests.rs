@@ -17,6 +17,7 @@ fn spec(verb: &str, url: String) -> RequestSpec {
             timeout_ms: 5_000,
             follow_redirects: true,
         },
+        auth: crate::auth::AuthConfig::None,
     }
 }
 

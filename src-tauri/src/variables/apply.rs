@@ -81,6 +81,7 @@ pub fn apply(context: &Context, spec: RequestSpec) -> AppResult<Applied> {
             headers,
             body,
             settings: spec.settings,
+            auth: spec.auth,
         },
         unresolved,
     })

@@ -466,6 +466,7 @@ fn spec(url: &str) -> RequestSpec {
             timeout_ms: 1000,
             follow_redirects: true,
         },
+        auth: crate::auth::AuthConfig::None,
     }
 }
 

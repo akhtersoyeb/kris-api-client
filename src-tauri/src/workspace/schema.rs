@@ -2,6 +2,7 @@ use crate::variables::Variable;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+use crate::auth::{default_auth, AuthConfig};
 use crate::http_engine::{KeyValue, RequestSettings};
 
 pub const SCHEMA_VERSION: u32 = 1;
@@ -27,6 +28,9 @@ pub struct ContainerFile {
     /// Workspace: global variables. Collection: its variables. Unused on folders.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub variables: Vec<Variable>,
+    /// Collections only: the auth that requests set to "inherit" use.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auth: Option<AuthConfig>,
 }
 
 impl ContainerFile {
@@ -37,6 +41,7 @@ impl ContainerFile {
             name: name.to_string(),
             order: Vec::new(),
             variables: Vec::new(),
+            auth: None,
         }
     }
 }
@@ -83,4 +88,6 @@ pub struct RequestFile {
     pub headers: Vec<KeyValue>,
     pub body: BodyFile,
     pub settings: RequestSettings,
+    #[serde(default = "default_auth")]
+    pub auth: AuthConfig,
 }

@@ -1,3 +1,4 @@
+use crate::auth::{default_auth, AuthConfig};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -35,6 +36,8 @@ pub struct RequestSpec {
     pub headers: Vec<KeyValue>,
     pub body: RequestBody,
     pub settings: RequestSettings,
+    #[serde(default = "default_auth")]
+    pub auth: AuthConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]

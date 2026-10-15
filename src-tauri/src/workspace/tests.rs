@@ -28,6 +28,7 @@ fn blank(name: &str) -> RequestFile {
             timeout_ms: 30_000,
             follow_redirects: true,
         },
+        auth: crate::auth::AuthConfig::Inherit,
     }
 }
 
