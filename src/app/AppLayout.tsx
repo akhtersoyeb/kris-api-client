@@ -13,6 +13,9 @@ import { saveActiveTab } from "@/features/workspace/save";
 import { useVariablesSync } from "@/features/variables/useVariablesSync";
 import { EnvironmentSelector } from "@/features/variables/EnvironmentSelector";
 import { VariablesDialog } from "@/features/variables/VariablesDialog";
+import { Settings } from "lucide-react";
+import { SettingsDialog } from "@/features/settings/SettingsDialog";
+import { useUiStore } from "@/store/ui";
 
 export function AppLayout() {
   useVariablesSync();
@@ -43,6 +46,15 @@ export function AppLayout() {
           >
             Close workspace
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label="Settings"
+            onClick={() => useUiStore.getState().setSettingsOpen(true)}
+          >
+            <Settings className="size-4" />
+          </Button>
           <ThemeToggle />
         </div>
       </header>
@@ -69,6 +81,7 @@ export function AppLayout() {
       </ResizablePanelGroup>
       <CommandPalette />
       <VariablesDialog />
+      <SettingsDialog />
     </div>
   );
 }

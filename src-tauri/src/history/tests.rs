@@ -158,23 +158,30 @@ fn prune_applies_count_and_age_limits() {
     let c = conn();
     let day = 86_400_000;
     let now = 100 * day;
+    // Recorded oldest first, like real use: a higher id means a newer timestamp.
+    // So /5 is 1 day old, /4 is 2 days old, ... and /1 is 5 days old.
     for n in 1..=5 {
         add(
             &c,
             "GET",
             &format!("https://x.dev/{n}"),
             Some(200),
-            now - n * day,
+            now - (6 - n) * day,
         );
     }
+
     let by_count = HistorySettings {
         retention_days: 0,
         max_entries: 3,
         ..Default::default()
     };
     db::prune(&c, &by_count, now).unwrap();
-    assert_eq!(db::list(&c, 10, 0).unwrap().len(), 3);
+    assert_eq!(
+        urls(&db::list(&c, 10, 0).unwrap()),
+        ["https://x.dev/5", "https://x.dev/4", "https://x.dev/3"]
+    );
 
+    // The cutoff is exactly 2 days ago: an entry exactly 2 days old stays, older ones go.
     let by_age = HistorySettings {
         retention_days: 2,
         max_entries: 100,
@@ -183,7 +190,7 @@ fn prune_applies_count_and_age_limits() {
     db::prune(&c, &by_age, now).unwrap();
     assert_eq!(
         urls(&db::list(&c, 10, 0).unwrap()),
-        ["https://x.dev/1", "https://x.dev/2"]
+        ["https://x.dev/5", "https://x.dev/4"]
     );
 }
 
