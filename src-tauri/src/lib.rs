@@ -53,6 +53,8 @@ pub fn run() {
         commands::history::clear_history,
         commands::history::get_app_settings,
         commands::history::set_app_settings,
+        commands::auth::get_collection_auth,
+        commands::auth::set_collection_auth,
     ]);
 
     // Regenerate TypeScript bindings on every dev run. The file is committed.

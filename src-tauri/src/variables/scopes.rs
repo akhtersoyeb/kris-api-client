@@ -129,7 +129,7 @@ pub struct ScopeVariables {
     pub secrets_error: Option<String>,
 }
 
-fn scope_meta(root: &Path, scope: &ScopeRef) -> AppResult<std::path::PathBuf> {
+pub(crate) fn scope_meta(root: &Path, scope: &ScopeRef) -> AppResult<std::path::PathBuf> {
     match scope {
         ScopeRef::Global => Ok(root.join(WORKSPACE_FILE)),
         ScopeRef::Collection { path } => {

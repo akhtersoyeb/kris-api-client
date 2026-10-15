@@ -1,8 +1,8 @@
+use crate::auth::{providers, resolve};
 use crate::commands::workspace::blocking;
 use crate::error::AppResult;
 use crate::http_engine::{self, HttpState, RequestSpec, ResponseSpec};
 use crate::variables::{apply::apply, builtins, context, Context, SecretsState};
-
 use crate::workspace::WorkspaceState;
 
 use std::path::PathBuf;
@@ -35,13 +35,18 @@ pub async fn send_request(
         let root = root.clone();
         let (env, path) = (environment_id.clone(), request_path.clone());
         blocking(move || {
-            let ctx = match root {
+            let ctx = match &root {
                 Some(root) => {
-                    context::build(&root, Some(store.as_ref()), env.as_deref(), path.as_deref())?
+                    context::build(root, Some(store.as_ref()), env.as_deref(), path.as_deref())?
                 }
                 None => Context::new(builtins::dynamic_value),
             };
-            apply(&ctx, spec)
+            let mut applied = apply(&ctx, spec)?;
+            // Auth comes after variables so {{token}} works, and before sending so the engine just sees headers.
+            let config = resolve::effective(root.as_deref(), path.as_deref(), &applied.spec.auth);
+            let config = resolve::substitute(&ctx, config)?;
+            providers::apply_auth(&config, &mut applied.spec)?;
+            Ok(applied)
         })
         .await?
     };
