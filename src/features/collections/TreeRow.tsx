@@ -22,6 +22,7 @@ import { DropContext } from "./drop-context";
 import { useContext } from "react";
 import { useVariablesStore } from "@/store/variables";
 import { METHOD_COLORS } from "@/lib/method-colors";
+import { useUiStore } from "@/store/ui";
 
 export function TreeRow({ node, active }: { node: NodeEntry; active: boolean }) {
   const expanded = useWorkspaceStore((s) => !!s.expanded[node.path]);
@@ -98,13 +99,18 @@ export function TreeRow({ node, active }: { node: NodeEntry; active: boolean }) 
           <ContextMenuItem onSelect={() => void openRequest(node.path)}>Open</ContextMenuItem>
         )}
         {node.kind === "collection" && (
-          <ContextMenuItem
-            onSelect={() =>
-              useVariablesStore.getState().openManager({ kind: "collection", path: node.path })
-            }
-          >
-            Variables...
-          </ContextMenuItem>
+          <>
+            <ContextMenuItem
+              onSelect={() =>
+                useVariablesStore.getState().openManager({ kind: "collection", path: node.path })
+              }
+            >
+              Variables...
+            </ContextMenuItem>
+            <ContextMenuItem onSelect={() => useUiStore.getState().openCollectionAuth(node.path)}>
+              Auth...
+            </ContextMenuItem>
+          </>
         )}
         <ContextMenuItem onSelect={() => void renameNode(node)}>Rename</ContextMenuItem>
         <ContextMenuItem onSelect={() => void duplicateNode(node)}>Duplicate</ContextMenuItem>

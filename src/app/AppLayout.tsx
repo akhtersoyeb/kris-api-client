@@ -16,6 +16,7 @@ import { VariablesDialog } from "@/features/variables/VariablesDialog";
 import { Settings } from "lucide-react";
 import { SettingsDialog } from "@/features/settings/SettingsDialog";
 import { useUiStore } from "@/store/ui";
+import { CollectionAuthDialog } from "@/features/auth/CollectionAuthDialog";
 
 export function AppLayout() {
   useVariablesSync();
@@ -82,6 +83,7 @@ export function AppLayout() {
       <CommandPalette />
       <VariablesDialog />
       <SettingsDialog />
+      <CollectionAuthDialog />
     </div>
   );
 }
