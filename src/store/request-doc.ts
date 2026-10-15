@@ -6,13 +6,14 @@ import {
   newRow,
   type HttpMethod,
   type KeyValueRow,
+  defaultAuth,
 } from "@/store/request-draft";
 import type { RequestTab } from "@/store/tabs";
 
 /** The part of a tab that is persisted to disk. */
 export type SavedFields = Pick<
   RequestTab,
-  "title" | "method" | "url" | "params" | "headers" | "body" | "settings"
+  "title" | "method" | "url" | "params" | "headers" | "body" | "settings" | "auth"
 >;
 
 const toKeyValues = (rows: KeyValueRow[]): KeyValue[] =>
@@ -37,6 +38,7 @@ export function tabToRequestFile(tab: SavedFields, name: string = tab.title): Re
       form: toKeyValues(tab.body.form),
     },
     settings: { timeoutMs: tab.settings.timeoutMs, followRedirects: tab.settings.followRedirects },
+    auth: tab.auth,
   };
 }
 
@@ -60,6 +62,7 @@ export function requestFileToFields(file: RequestFile): SavedFields {
       timeoutMs: file.settings.timeoutMs,
       followRedirects: file.settings.followRedirects,
     },
+    auth: file.auth!,
   };
 }
 
@@ -75,6 +78,7 @@ export function blankRequestFile(name: string): RequestFile {
     headers: [],
     body: defaultBody(),
     settings: defaultSettings(),
+    auth: defaultAuth(),
   });
 }
 

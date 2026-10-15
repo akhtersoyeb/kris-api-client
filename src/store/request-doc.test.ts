@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultBody, defaultSettings, newRow } from "@/store/request-draft";
+import { defaultBody, defaultSettings, newRow, defaultAuth } from "@/store/request-draft";
 import type { RequestTab } from "@/store/tabs";
 import { isDirty, requestFileToFields, snapshot, tabToRequestFile } from "./request-doc";
 
@@ -16,6 +16,7 @@ const makeTab = (patch: Partial<RequestTab> = {}): RequestTab => ({
   path: null,
   saved: null,
   conflict: false,
+  auth: defaultAuth(),
   ...patch,
 });
 
@@ -47,5 +48,13 @@ describe("request documents", () => {
   it("falls back to GET for unknown methods", () => {
     const file = { ...tabToRequestFile(makeTab()), method: "BREW" };
     expect(requestFileToFields(file).method).toBe("GET");
+  });
+
+  it("persists auth and notices when it changes", () => {
+    const tab = makeTab({ auth: { type: "bearer", token: "{{token}}", prefix: "Bearer" } });
+    expect(requestFileToFields(tabToRequestFile(tab)).auth).toEqual(tab.auth);
+    const saved = { ...tab, saved: snapshot(tab) };
+    expect(isDirty(saved)).toBe(false);
+    expect(isDirty({ ...saved, auth: { type: "none" } })).toBe(true);
   });
 });

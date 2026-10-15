@@ -92,6 +92,7 @@ const file: RequestFile = {
   headers: [],
   body: { mode: "json", json: '{"a":1}', raw: "", rawMime: "text/plain", form: [] },
   settings: { timeoutMs: 30000, followRedirects: true },
+  auth: { type: "inherit" },
 };
 
 describe("saved requests", () => {

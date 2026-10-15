@@ -1,3 +1,7 @@
+import type { AuthConfig } from "@/lib/bindings";
+
+export const defaultAuth = (): AuthConfig => ({ type: "inherit" });
+
 export interface KeyValueRow {
   id: string;
   key: string;

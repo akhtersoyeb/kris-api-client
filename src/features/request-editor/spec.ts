@@ -28,5 +28,6 @@ export function buildRequestSpec(tab: RequestTab): RequestSpec {
     headers: toKeyValues(tab.headers),
     body: toRequestBody(tab.body),
     settings: { timeoutMs: Math.max(0, timeout), followRedirects: tab.settings.followRedirects },
+    auth: tab.auth,
   };
 }

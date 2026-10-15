@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { RequestFile } from "@/lib/bindings";
+import type { AuthConfig, RequestFile } from "@/lib/bindings";
 import { isUnder, remapPath } from "@/lib/paths";
 import { isDirty, requestFileToFields, snapshot, withSnapshotName } from "@/store/request-doc";
 import {
@@ -10,6 +10,7 @@ import {
   type HttpMethod,
   type KeyValueRow,
   type SettingsDraft,
+  defaultAuth,
 } from "@/store/request-draft";
 
 export { HTTP_METHODS };
@@ -25,6 +26,8 @@ export interface RequestTab {
   headers: KeyValueRow[];
   body: BodyDraft;
   settings: SettingsDraft;
+  /** How this request authenticates; "inherit" uses the collection's auth. */
+  auth: AuthConfig;
   /** Workspace-relative file path, or null for a request that hasn't been saved yet. */
   path: string | null;
   /** Snapshot of the content as last saved or loaded. "Dirty" means "differs from this". */
@@ -69,6 +72,7 @@ function makeTab(init: TabPatch = {}): RequestTab {
     headers: [],
     body: defaultBody(),
     settings: defaultSettings(),
+    auth: defaultAuth(),
     path: null,
     saved: null,
     conflict: false,

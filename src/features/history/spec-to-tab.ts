@@ -37,6 +37,7 @@ export function specToTabPatch(spec: RequestSpec): TabPatch {
       timeoutMs: spec.settings.timeoutMs,
       followRedirects: spec.settings.followRedirects,
     },
+    auth: spec.auth,
   };
 }
 
@@ -45,6 +46,7 @@ export function hasRedactions(spec: RequestSpec): boolean {
   return (
     spec.url.includes(REDACTED) ||
     spec.headers.some((h) => h.value === REDACTED) ||
-    (body.type === "formUrlEncoded" && body.fields.some((f) => f.value === REDACTED))
+    (body.type === "formUrlEncoded" && body.fields.some((f) => f.value === REDACTED)) ||
+    JSON.stringify(spec.auth).includes(REDACTED)
   );
 }

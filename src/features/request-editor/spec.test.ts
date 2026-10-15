@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultBody, defaultSettings, newRow } from "@/store/request-draft";
+import { defaultBody, defaultSettings, newRow, defaultAuth } from "@/store/request-draft";
 import type { RequestTab } from "@/store/tabs";
 import { buildRequestSpec } from "./spec";
 
@@ -16,6 +16,7 @@ const makeTab = (patch: Partial<RequestTab> = {}): RequestTab => ({
   path: null,
   saved: null,
   conflict: false,
+  auth: defaultAuth(),
   ...patch,
 });
 

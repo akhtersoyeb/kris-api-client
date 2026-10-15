@@ -8,6 +8,7 @@ const base = (patch: Partial<RequestSpec> = {}): RequestSpec => ({
   headers: [{ key: "Accept", value: "*/*", enabled: true }],
   body: { type: "none" },
   settings: { timeoutMs: 5000, followRedirects: false },
+  auth: { type: "inherit" },
   ...patch,
 });
 
@@ -63,5 +64,11 @@ describe("hasRedactions", () => {
         }),
       ),
     ).toBe(true);
+  });
+
+  it("keeps auth, and flags redacted auth values", () => {
+    const spec = base({ auth: { type: "basic", username: "me", password: "[redacted]" } });
+    expect(specToTabPatch(spec).auth).toEqual(spec.auth);
+    expect(hasRedactions(spec)).toBe(true);
   });
 });

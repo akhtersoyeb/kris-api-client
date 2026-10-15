@@ -1,5 +1,6 @@
 import {
   commands,
+  type AuthConfig,
   type AppSettings,
   type AppError,
   type RequestFile,
@@ -88,4 +89,7 @@ export const ipc = {
   clearHistory: () => unwrap(commands.clearHistory()),
   getAppSettings: () => commands.getAppSettings(),
   setAppSettings: (settings: AppSettings) => unwrap(commands.setAppSettings(settings)),
+  getCollectionAuth: (path: string) => unwrap(commands.getCollectionAuth(path)),
+  setCollectionAuth: (path: string, auth: AuthConfig) =>
+    unwrap(commands.setCollectionAuth(path, auth)),
 };

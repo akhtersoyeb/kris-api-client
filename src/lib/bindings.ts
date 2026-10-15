@@ -295,6 +295,22 @@ async setAppSettings(newSettings: AppSettings) : Promise<Result<AppSettings, App
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getCollectionAuth(path: string) : Promise<Result<AuthConfig, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_collection_auth", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setCollectionAuth(path: string, auth: AuthConfig) : Promise<Result<null, AppError>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_collection_auth", { path, auth }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -308,12 +324,25 @@ async setAppSettings(newSettings: AppSettings) : Promise<Result<AppSettings, App
 
 /** user-defined types **/
 
+export type ApiKeyLocation = "header" | "query"
 /**
  * Error returned from every Tauri command. Serializes to
  * `{ "kind": "InvalidInput", "message": "..." }`, so the UI can switch on `kind`.
  */
 export type AppError = { kind: "Io"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Internal"; message: string } | { kind: "Network"; message: string } | { kind: "Timeout"; message: string } | { kind: "Cancelled"; message: string } | { kind: "NotFound"; message: string } | { kind: "Unsupported"; message: string } | { kind: "Keychain"; message: string } | { kind: "Storage"; message: string }
 export type AppSettings = { history: HistorySettings }
+/**
+ * How a request authenticates. Every string may contain {{variables}}.
+ */
+export type AuthConfig = 
+/**
+ * On a request: use the collection's auth. On a collection it means the same as `None`.
+ */
+{ type: "inherit" } | { type: "none" } | { type: "basic"; username: string; password: string } | 
+/**
+ * `prefix` is usually "Bearer"; an empty prefix means "Bearer".
+ */
+{ type: "bearer"; token: string; prefix: string } | { type: "apiKey"; key: string; value: string; location: ApiKeyLocation }
 export type BodyEncoding = "utf8" | "base64"
 export type BodyFile = { mode: BodyMode; json?: string; raw?: string; rawMime?: string; form?: KeyValue[] }
 export type BodyMode = "none" | "json" | "raw" | "form"
@@ -372,7 +401,7 @@ export type RequestBody = { type: "none" } | { type: "json"; content: string } |
 /**
  * <name>.request.json. Mirrors the editor state so nothing is lost between body modes.
  */
-export type RequestFile = { schemaVersion: number; id: string; name: string; method: string; url: string; params?: KeyValue[]; headers?: KeyValue[]; body: BodyFile; settings: RequestSettings }
+export type RequestFile = { schemaVersion: number; id: string; name: string; method: string; url: string; params?: KeyValue[]; headers?: KeyValue[]; body: BodyFile; settings: RequestSettings; auth?: AuthConfig }
 export type RequestSettings = { 
 /**
  * 0 means no timeout.
@@ -382,7 +411,7 @@ export type RequestSpec = { method: string;
 /**
  * Final URL including the query string.
  */
-url: string; headers: KeyValue[]; body: RequestBody; settings: RequestSettings }
+url: string; headers: KeyValue[]; body: RequestBody; settings: RequestSettings; auth?: AuthConfig }
 export type Resolution = { text: string; 
 /**
  * Variable names that weren't defined.

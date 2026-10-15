@@ -4,6 +4,7 @@ import { useTabsStore, type RequestTab } from "@/store/tabs";
 import { useWorkspaceStore } from "@/store/workspace";
 import { syncTabWithDisk } from "./save";
 import { useVariablesStore } from "@/store/variables";
+import { defaultAuth } from "@/store/request-draft";
 
 type SessionTab = Omit<RequestTab, "conflict">; // conflicts are re-detected on restore
 
@@ -107,7 +108,12 @@ export async function restoreSession(workspaceId: string) {
     if (session.tabs.length === 0) return;
 
     const tabs = session.tabs.map((t) => {
-      const tab: RequestTab = { ...t, conflict: false, dirty: false };
+      const tab: RequestTab = {
+        ...t,
+        auth: t.auth ?? defaultAuth(),
+        conflict: false,
+        dirty: false,
+      };
       return { ...tab, dirty: isDirty(tab) };
     });
     const active = tabs.some((t) => t.id === session.activeTabId)
