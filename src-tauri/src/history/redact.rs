@@ -1,4 +1,5 @@
 use super::settings::HistorySettings;
+use crate::auth::AuthConfig;
 use crate::http_engine::{KeyValue, RequestBody, RequestSpec};
 
 pub const MASK: &str = "[redacted]";
@@ -122,6 +123,7 @@ pub fn for_history(spec: &RequestSpec, settings: &HistorySettings) -> RequestSpe
         if let RequestBody::FormUrlEncoded { fields } = &mut out.body {
             *fields = redact_rows(fields);
         }
+        out.auth = redact_auth(&out.auth);
     }
     if !settings.store_bodies {
         out.body = match out.body {
@@ -145,4 +147,35 @@ pub fn for_history(spec: &RequestSpec, settings: &HistorySettings) -> RequestSpe
         };
     }
     out
+}
+
+fn mask_literal(value: &str) -> String {
+    if is_safe_value(value) {
+        value.to_string() // empty, or nothing but {{variables}} and a scheme word
+    } else {
+        MASK.to_string()
+    }
+}
+
+pub fn redact_auth(auth: &AuthConfig) -> AuthConfig {
+    match auth {
+        AuthConfig::Basic { username, password } => AuthConfig::Basic {
+            username: username.clone(),
+            password: mask_literal(password),
+        },
+        AuthConfig::Bearer { token, prefix } => AuthConfig::Bearer {
+            token: mask_literal(token),
+            prefix: prefix.clone(),
+        },
+        AuthConfig::ApiKey {
+            key,
+            value,
+            location,
+        } => AuthConfig::ApiKey {
+            key: key.clone(),
+            value: mask_literal(value),
+            location: *location,
+        },
+        other => other.clone(),
+    }
 }
