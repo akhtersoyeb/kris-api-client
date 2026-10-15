@@ -5,6 +5,7 @@ use super::recorder::{self, now_ms, Outcome, RecordInput};
 use super::redact::{self, MASK};
 use super::settings::{AppSettings, HistorySettings, SettingsState};
 use super::types::NewEntry;
+use crate::auth::{ApiKeyLocation, AuthConfig};
 use crate::error::AppError;
 use crate::http_engine::{KeyValue, RequestBody, RequestSettings, RequestSpec};
 use crate::variables::environments;
@@ -440,4 +441,46 @@ fn settings_are_clamped_persisted_and_survive_a_corrupt_file() {
             .history()
             .enabled
     ); // falls back to defaults
+}
+
+#[test]
+fn literal_auth_secrets_are_masked_but_variables_are_kept() {
+    let settings = HistorySettings::default();
+    let mut s = spec("GET", "https://x.dev");
+
+    s.auth = AuthConfig::Basic {
+        username: "me".into(),
+        password: "hunter2".into(),
+    };
+    match redact::for_history(&s, &settings).auth {
+        AuthConfig::Basic { username, password } => {
+            assert_eq!((username.as_str(), password.as_str()), ("me", MASK))
+        }
+        other => panic!("unexpected auth: {other:?}"),
+    }
+
+    s.auth = AuthConfig::Bearer {
+        token: "{{token}}".into(),
+        prefix: "Bearer".into(),
+    };
+    assert_eq!(redact::for_history(&s, &settings).auth, s.auth);
+
+    s.auth = AuthConfig::ApiKey {
+        key: "k".into(),
+        value: "abc".into(),
+        location: ApiKeyLocation::Query,
+    };
+    assert!(
+        matches!(redact::for_history(&s, &settings).auth, AuthConfig::ApiKey { value, .. } if value == MASK)
+    );
+
+    s.auth = AuthConfig::Bearer {
+        token: "abc".into(),
+        prefix: "Bearer".into(),
+    };
+    let off = HistorySettings {
+        redact_secrets: false,
+        ..Default::default()
+    };
+    assert_eq!(redact::for_history(&s, &off).auth, s.auth);
 }
