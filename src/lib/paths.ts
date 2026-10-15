@@ -6,3 +6,9 @@ export function remapPath(path: string, from: string, to: string): string {
 
 export const isUnder = (path: string, prefix: string) =>
   path === prefix || path.startsWith(`${prefix}/`);
+
+/** `collections/<name>` for any path inside a collection, else null. */
+export function collectionOf(path: string): string | null {
+  const match = /^collections\/([^/]+)\//.exec(path);
+  return match ? `collections/${match[1]}` : null;
+}
