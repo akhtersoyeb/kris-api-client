@@ -92,7 +92,7 @@ impl AuthProvider for ApiKey<'_> {
 
 fn provider_for(config: &AuthConfig) -> Option<Box<dyn AuthProvider + '_>> {
     match config {
-        AuthConfig::Inherit | AuthConfig::None => None,
+        AuthConfig::Inherit | AuthConfig::None | AuthConfig::OAuth2(_) => None,
         AuthConfig::Basic { username, password } => Some(Box::new(Basic { username, password })),
         AuthConfig::Bearer { token, prefix } => Some(Box::new(Bearer { token, prefix })),
         AuthConfig::ApiKey {
@@ -107,8 +107,12 @@ fn provider_for(config: &AuthConfig) -> Option<Box<dyn AuthProvider + '_>> {
     }
 }
 
-/// `config` must already be "effective" (not `Inherit`) and have its variables substituted.
 pub fn apply_auth(config: &AuthConfig, spec: &mut RequestSpec) -> AppResult<()> {
+    if matches!(config, AuthConfig::OAuth2(_)) {
+        return Err(AppError::Internal(
+            "an OAuth 2.0 token must be fetched before auth is applied".into(),
+        ));
+    }
     match provider_for(config) {
         Some(provider) => provider.apply(spec),
         None => Ok(()),

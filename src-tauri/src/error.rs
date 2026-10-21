@@ -27,6 +27,8 @@ pub enum AppError {
     Keychain(String),
     #[error("history database error: {0}")]
     Storage(String),
+    #[error("{0}")]
+    Auth(String),
 }
 
 impl From<std::io::Error> for AppError {

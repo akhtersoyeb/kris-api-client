@@ -1,5 +1,6 @@
 use super::settings::HistorySettings;
 use crate::auth::AuthConfig;
+use crate::auth::OAuth2Config;
 use crate::http_engine::{KeyValue, RequestBody, RequestSpec};
 
 pub const MASK: &str = "[redacted]";
@@ -176,6 +177,10 @@ pub fn redact_auth(auth: &AuthConfig) -> AuthConfig {
             value: mask_literal(value),
             location: *location,
         },
+        AuthConfig::OAuth2(c) => AuthConfig::OAuth2(OAuth2Config {
+            client_secret: mask_literal(&c.client_secret),
+            ..c.clone()
+        }),
         other => other.clone(),
     }
 }

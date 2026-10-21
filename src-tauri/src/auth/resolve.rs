@@ -8,6 +8,8 @@ use crate::workspace::fs_util::safe_join;
 use crate::workspace::schema::COLLECTION_FILE;
 use crate::workspace::store::read_container;
 
+use super::config::OAuth2Config;
+
 /// The auth of the collection a request lives in. Unreadable or missing means none, like variables.
 pub fn collection_auth(root: Option<&Path>, request_path: Option<&str>) -> Option<AuthConfig> {
     let collection = collection_of(request_path?)?;
@@ -54,6 +56,15 @@ pub fn substitute(context: &Context, auth: AuthConfig) -> AppResult<AuthConfig> 
             value: sub(&value),
             location,
         },
+        AuthConfig::OAuth2(c) => AuthConfig::OAuth2(OAuth2Config {
+            token_url: sub(&c.token_url),
+            auth_url: sub(&c.auth_url),
+            client_id: sub(&c.client_id),
+            client_secret: sub(&c.client_secret),
+            scope: sub(&c.scope),
+            header_prefix: sub(&c.header_prefix),
+            ..c
+        }),
         other => other,
     };
     if !missing.is_empty() {
